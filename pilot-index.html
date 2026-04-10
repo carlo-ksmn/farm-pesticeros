@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Finca · Control de Horas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F5F2EB;
+    --surface: #FFFFFF;
+    --surface2: #EDE9E0;
+    --text: #1A1A18;
+    --text2: #6B6860;
+    --text3: #9E9B94;
+    --green: #2D6A4F;
+    --green-light: #D8EDDF;
+    --green-mid: #52B788;
+    --red: #C1121F;
+    --red-light: #FFE5E7;
+    --amber: #9C6200;
+    --amber-light: #FFF0C8;
+    --blue: #1B4F72;
+    --blue-light: #D6EAF8;
+    --border: rgba(26,26,24,0.10);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* AUTH SCREEN */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 2rem;
+  }
+
+  .auth-logo {
+    font-size: 48px;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-title {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    text-align: center;
+  }
+
+  .auth-sub {
+    font-size: 14px;
+    color: var(--text2);
+    text-align: center;
+    margin-top: -1.5rem;
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--green-mid); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-primary:active { transform: scale(0.98); background: #1B4332; }
+
+  .btn-ghost {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-ghost:hover { background: var(--surface2); }
+
+  .auth-error {
+    font-size: 13px;
+    color: var(--red);
+    text-align: center;
+    padding: 8px;
+    background: var(--red-light);
+    border-radius: var(--radius-sm);
+    display: none;
+  }
+
+  /* APP SHELL */
+  #app-screen { display: none; min-height: 100vh; flex-direction: column; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .topbar-left { display: flex; flex-direction: column; }
+  .topbar-name { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+  .topbar-role { font-size: 12px; color: var(--text3); }
+
+  .lang-pill {
+    display: flex;
+    background: var(--surface2);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .lang-opt {
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .lang-opt.active { background: var(--surface); color: var(--text); font-weight: 500; }
+
+  .logout-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px;
+  }
+
+  .content { padding: 20px; flex: 1; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+  }
+
+  /* CLOCK CARD */
+  .clock-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 52px;
+    font-weight: 400;
+    letter-spacing: -2px;
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+    color: var(--text);
+  }
+
+  .clock-date {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 1.25rem;
+  }
+
+  .punch-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .punch-btn.in { background: var(--green); color: white; }
+  .punch-btn.in:active { background: #1B4332; transform: scale(0.98); }
+  .punch-btn.out { background: var(--red); color: white; }
+  .punch-btn.out:active { background: #8B0000; transform: scale(0.98); }
+  .punch-btn.break { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(156,98,0,0.2); }
+  .punch-btn.break-end { background: var(--amber); color: white; }
+
+  .punch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .session-info {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text2);
+    margin: 8px 0 12px;
+    min-height: 18px;
+  }
+
+  /* METRICS */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-val { font-size: 22px; font-weight: 500; font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+  .metric-val.positive { color: var(--green); }
+  .metric-val.negative { color: var(--red); }
+  .metric-val.neutral { color: var(--text); }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+
+  /* LOG ROWS */
+  .log-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); }
+  .log-type { color: var(--text2); }
+
+  /* COMPENSATION */
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    margin-bottom: 10px;
+    outline: none;
+  }
+
+  .btn-send {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-send:hover { background: var(--surface2); }
+
+  /* CHEF - TEAM */
+  .team-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .team-row:last-child { border-bottom: none; }
+
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .av-green { background: var(--green-light); color: var(--green); }
+  .av-purple { background: #EDE9FE; color: #4C1D95; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green-mid); }
+  .dot-gray { background: var(--text3); }
+
+  .team-info { flex: 1; }
+  .team-name { font-size: 14px; font-weight: 500; }
+  .team-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  .team-right { text-align: right; }
+  .team-hours { font-size: 14px; font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  /* REQUESTS */
+  .request-card {
+    border-left: 3px solid var(--amber);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem;
+    margin-bottom: 8px;
+  }
+  .request-card.approved { border-left-color: var(--green-mid); }
+  .request-card.denied { border-left-color: var(--text3); opacity: 0.5; }
+
+  .req-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-approve {
+    flex: 1; padding: 8px; background: var(--green); color: white;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-deny {
+    flex: 1; padding: 8px; background: var(--red-light); color: var(--red);
+    border: 1px solid rgba(193,18,31,0.2); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* TABS (chef) */
+  .tab-bar {
+    display: flex;
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 3px;
+    margin-bottom: 16px;
+    gap: 3px;
+  }
+  .tab {
+    flex: 1; padding: 8px; border: none; border-radius: 9px;
+    background: transparent; color: var(--text2);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .tab.active { background: var(--surface); color: var(--text); font-weight: 500; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; color: var(--text3); font-size: 14px; padding: 2rem 0; }
+
+  .week-row {
+    display: flex; justify-content: space-between;
+    font-size: 14px; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .week-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div>
+    <div class="auth-logo">🌿</div>
+  </div>
+  <div>
+    <div class="auth-title">Finca · Control de Horas</div>
+    <div class="auth-sub" style="margin-top:6px;">Inicia sesión para continuar</div>
+  </div>
+  <div class="auth-card">
+    <div>
+      <div class="field-label">Correo electrónico</div>
+      <input type="email" id="auth-email" placeholder="tu@correo.com" autocomplete="email">
+    </div>
+    <div>
+      <div class="field-label">Contraseña</div>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn-primary" onclick="login()" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none;flex-direction:column;">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-name" id="top-name">—</div>
+      <div class="topbar-role" id="top-role">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="lang-pill" id="lang-pill" style="display:none;">
+        <button class="lang-opt active" id="lang-es" onclick="setLang('es')">🇩🇴 ES</button>
+        <button class="lang-opt" id="lang-ht" onclick="setLang('ht')">🇭🇹 HT</button>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Salir">⏏</button>
+    </div>
+  </div>
+
+  <div class="content" id="main-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://yetymoqipucvdsfwiqdy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlldHltb3FpcHVjdmRzZndpcWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI3ODQsImV4cCI6MjA5MTM5ODc4NH0.Tt-q2FLQ95rrd-npC2AcHrENjIogGaQqrkszOHu-dTA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let currentLang = 'es';
+let clockInterval = null;
+let elapsedInterval = null;
+let activeEntry = null;
+
+const T = {
+  es: {
+    role_pesticero: 'Pesticero',
+    role_chef: 'Chef',
+    clock_in: 'Registrar entrada',
+    clock_out: 'Registrar salida',
+    merienda_start: 'Iniciar merienda',
+    merienda_end: 'Fin de merienda',
+    today: 'Hoy',
+    overtime: 'Horas extra',
+    this_week: 'Esta semana',
+    hour_bank: 'Banco de horas',
+    history: 'Historial de hoy',
+    entry_work_in: 'Entrada',
+    entry_work_out: 'Salida',
+    entry_merienda_in: 'Inicio merienda',
+    entry_merienda_out: 'Fin merienda',
+    compensation: 'Solicitar compensación',
+    comp_money: 'Pago en dinero extra',
+    comp_time: 'Tiempo libre (salir antes)',
+    send_request: 'Enviar solicitud al chef',
+    no_bank: 'Sin horas acumuladas aún',
+    team_status: 'Estado del equipo',
+    pending_requests: 'Solicitudes pendientes',
+    week_summary: 'Resumen semanal',
+    approve: 'Aprobar',
+    deny: 'Rechazar',
+    approved: 'Aprobado ✓',
+    denied: 'Rechazado',
+    no_pending: 'Sin solicitudes pendientes',
+    requests_tab: 'Solicitudes',
+    team_tab: 'Equipo',
+    week_tab: 'Semana',
+    on_shift: 'En turno',
+    off: 'Libre',
+    normal_hours: 'En hora',
+    session_active: 'Turno activo desde las',
+    session_none: 'Sin turno activo',
+    break_active: 'En merienda desde las',
+    punched_in: 'Entrada registrada',
+    punched_out: 'Salida registrada',
+    break_started: 'Merienda iniciada',
+    break_ended: 'Merienda terminada',
+    request_sent: 'Solicitud enviada al chef',
+    weekend_shift: 'Turno de fin de semana',
+    this_weekend: 'Este fin de semana',
+    next_weekend: 'Próximo fin de semana',
+  },
+  ht: {
+    role_pesticero: 'Pesticero',
+    role_chef: 'Chèf',
+    clock_in: 'Antre nan travay',
+    clock_out: 'Soti nan travay',
+    merienda_start: 'Kòmanse manje',
+    merienda_end: 'Fini manje',
+    today: 'Jodi a',
+    overtime: 'Èdtan siplemantè',
+    this_week: 'Semèn sa a',
+    hour_bank: 'Bank èdtan',
+    history: 'Istwa jodi a',
+    entry_work_in: 'Antre',
+    entry_work_out: 'Soti',
+    entry_merienda_in: 'Kòmanse manje',
+    entry_merienda_out: 'Fini manje',
+    compensation: 'Mande konpansasyon',
+    comp_money: 'Peye ak lajan',
+    comp_time: 'Tan lib (soti bonè)',
+    send_request: 'Voye demann bay chèf la',
+    no_bank: 'Pa gen èdtan akimile',
+    team_status: 'Estati ekip la',
+    pending_requests: 'Demann ki annatant',
+    week_summary: 'Rezime semèn nan',
+    approve: 'Apwouve',
+    deny: 'Refize',
+    approved: 'Apwouve ✓',
+    denied: 'Refize',
+    no_pending: 'Pa gen demann annatant',
+    requests_tab: 'Demann',
+    team_tab: 'Ekip',
+    week_tab: 'Semèn',
+    on_shift: 'Ap travay',
+    off: 'Lib',
+    normal_hours: 'Nòmal',
+    session_active: 'Travay kòmanse nan',
+    session_none: 'Pa gen travay aktif',
+    break_active: 'Ap manje depi',
+    punched_in: 'Antre anrejistre',
+    punched_out: 'Soti anrejistre',
+    break_started: 'Manje kòmanse',
+    break_ended: 'Manje fini',
+    request_sent: 'Demann voye bay chèf la',
+    weekend_shift: 'Travay wikenn',
+    this_weekend: 'Wikenn sa a',
+    next_weekend: 'Pwochen wikenn',
+  }
+};
+
+function t(key) { return T[currentLang][key] || T['es'][key] || key; }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function fmtTime(date) {
+  if (!date) return '—';
+  const d = new Date(date);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function fmtDuration(minutes) {
+  const h = Math.floor(Math.abs(minutes) / 60);
+  const m = Math.abs(minutes) % 60;
+  const sign = minutes < 0 ? '-' : '';
+  return sign + h + 'h ' + pad(m) + 'm';
+}
+
+function fmtDate(d) {
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// AUTH
+async function login() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('auth-error');
+  err.style.display = 'none';
+  btn.innerHTML = '<div class="spinner"></div>';
+  btn.disabled = true;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    err.textContent = 'Correo o contraseña incorrectos';
+    err.style.display = 'block';
+    btn.textContent = 'Entrar';
+    btn.disabled = false;
+    return;
+  }
+  await initApp(data.user);
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  clearInterval(clockInterval);
+  clearInterval(elapsedInterval);
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-password').value = '';
+}
+
+// INIT
+async function initApp(user) {
+  currentUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  currentProfile = profile;
+
+  // show nelson's lang toggle
+  if (profile.language === 'ht' || profile.name?.includes('Nelson')) {
+    document.getElementById('lang-pill').style.display = 'flex';
+    currentLang = profile.language || 'es';
+    document.getElementById('lang-es').classList.toggle('active', currentLang === 'es');
+    document.getElementById('lang-ht').classList.toggle('active', currentLang === 'ht');
+  }
+
+  document.getElementById('top-name').textContent = profile.name || user.email;
+  document.getElementById('top-role').textContent = t('role_' + profile.role);
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'flex';
+
+  if (profile.role === 'pesticero') {
+    renderPesticero();
+  } else {
+    renderChef();
+  }
+}
+
+// CLOCK
+function startClock(elId) {
+  clearInterval(clockInterval);
+  function update() {
+    const now = new Date();
+    const el = document.getElementById(elId);
+    if (el) el.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+  }
+  update();
+  clockInterval = setInterval(update, 10000);
+}
+
+// PESTICERO VIEW
+async function renderPesticero() {
+  const content = document.getElementById('main-content');
+  content.innerHTML = '<div class="card"><div class="clock-display" id="main-clock">--:--</div><div class="clock-date" id="main-date"></div><div class="session-info" id="session-info"></div><div id="punch-buttons"></div></div><div class="metric-grid" id="metrics" style="margin-bottom:12px;"></div><div class="card" id="history-card"></div><div class="card" id="comp-card"></div>';
+
+  document.getElementById('main-date').textContent = fmtDate(new Date());
+  startClock('main-clock');
+
+  await refreshPesticeroState();
+}
+
+async function refreshPesticeroState() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // get today's entries
+  const { data: entries } = await sb.from('time_entries')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .gte('clock_in', today.toISOString())
+    .order('clock_in', { ascending: true });
+
+  // find active entry (no clock_out)
+  activeEntry = entries?.find(e => !e.clock_out) || null;
+
+  // calculate worked minutes (work entries only)
+  let workedMins = 0;
+  let meriendaMins = 0;
+  entries?.forEach(e => {
+    if (e.clock_out) {
+      const mins = Math.floor((new Date(e.clock_out) - new Date(e.clock_in)) / 60000);
+      if (e.entry_type === 'work') workedMins += mins;
+      if (e.entry_type === 'merienda') meriendaMins += mins;
+    }
+  });
+
+  // if active work entry, add elapsed
+  if (activeEntry && activeEntry.entry_type === 'work') {
+    workedMins += Math.floor((new Date() - new Date(activeEntry.clock_in)) / 60000);
+  }
+
+  const normalMins = 9 * 60 + 30; // 9.5h
+  const overtimeMins = Math.max(0, workedMins - normalMins);
+
+  // session info
+  const sessionEl = document.getElementById('session-info');
+  if (activeEntry) {
+    if (activeEntry.entry_type === 'merienda') {
+      sessionEl.textContent = t('break_active') + ' ' + fmtTime(activeEntry.clock_in);
+    } else {
+      sessionEl.textContent = t('session_active') + ' ' + fmtTime(activeEntry.clock_in);
+    }
+  } else {
+    sessionEl.textContent = t('session_none');
+  }
+
+  // punch buttons
+  const now = new Date();
+  const hour = now.getHours();
+  const showMerienda = hour >= 8 && hour < 10;
+  const btns = document.getElementById('punch-buttons');
+
+  if (!activeEntry) {
+    btns.innerHTML = `<button class="punch-btn in" onclick="punchIn('work')">${t('clock_in')}</button>`;
+  } else if (activeEntry.entry_type === 'work') {
+    let meriendaBtn = '';
+    if (showMerienda) {
+      meriendaBtn = `<button class="punch-btn break" onclick="punchIn('merienda')" style="margin-top:8px;">${t('merienda_start')}</button>`;
+    }
+    btns.innerHTML = `<button class="punch-btn out" onclick="punchOut()">${t('clock_out')}</button>${meriendaBtn}`;
+  } else if (activeEntry.entry_type === 'merienda') {
+    btns.innerHTML = `<button class="punch-btn break-end" onclick="punchOut()">${t('merienda_end')}</button>`;
+  }
+
+  // metrics
+  const metricsEl = document.getElementById('metrics');
+  metricsEl.innerHTML = `
+    <div class="metric"><div class="metric-label">${t('today')}</div><div class="metric-val neutral">${fmtDuration(workedMins)}</div></div>
+    <div class="metric"><div class="metric-label">${t('overtime')}</div><div class="metric-val ${overtimeMins > 0 ? 'positive' : 'neutral'}">${overtimeMins > 0 ? '+' : ''}${fmtDuration(overtimeMins)}</div></div>
+  `;
+
+  // history
+  const histEl = document.getElementById('history-card');
+  let histHTML = `<div class="card-title">${t('history')}</div>`;
+  if (!entries || entries.length === 0) {
+    histHTML += `<div class="empty">—</div>`;
+  } else {
+    entries.forEach(e => {
+      const typeIn = e.entry_type === 'merienda' ? t('entry_merienda_in') : t('entry_work_in');
+      const typeOut = e.entry_type === 'merienda' ? t('entry_merienda_out') : t('entry_work_out');
+      histHTML += `<div class="log-row"><span class="log-type">${typeIn}</span><span class="log-time">${fmtTime(e.clock_in)}</span></div>`;
+      if (e.clock_out) {
+        histHTML += `<div class="log-row"><span class="log-type">${typeOut}</span><span class="log-time">${fmtTime(e.clock_out)}</span></div>`;
+      }
+    });
+  }
+  histEl.innerHTML = histHTML;
+
+  // compensation
+  await renderCompensation(overtimeMins);
+
+  // live elapsed
+  clearInterval(elapsedInterval);
+  if (activeEntry && activeEntry.entry_type === 'work') {
+    elapsedInterval = setInterval(() => {
+      const elapsed = workedMins + Math.floor((new Date() - new Date(activeEntry.clock_in)) / 60000) - workedMins;
+      // just refresh quietly
+    }, 30000);
+  }
+}
+
+async function punchIn(type) {
+  const { error } = await sb.from('time_entries').insert({
+    user_id: currentUser.id,
+    clock_in: new Date().toISOString(),
+    entry_type: type
+  });
+  if (!error) {
+    showToast(type === 'merienda' ? t('break_started') : t('punched_in'));
+    await refreshPesticeroState();
+  }
+}
+
+async function punchOut() {
+  if (!activeEntry) return;
+  const { error } = await sb.from('time_entries').update({ clock_out: new Date().toISOString() }).eq('id', activeEntry.id);
+  if (!error) {
+    showToast(activeEntry.entry_type === 'merienda' ? t('break_ended') : t('punched_out'));
+    activeEntry = null;
+    await refreshPesticeroState();
+  }
+}
+
+async function renderCompensation(todayOvertimeMins) {
+  // get total bank
+  const { data: allEntries } = await sb.from('time_entries').select('*').eq('user_id', currentUser.id);
+  let totalWorked = 0;
+  allEntries?.forEach(e => {
+    if (e.clock_out && e.entry_type === 'work') {
+      totalWorked += Math.floor((new Date(e.clock_out) - new Date(e.clock_in)) / 60000);
+    }
+  });
+
+  // approved time-off deductions
+  const { data: approved } = await sb.from('compensation_requests').select('*').eq('user_id', currentUser.id).eq('status', 'approved');
+  let deducted = 0;
+  approved?.forEach(r => deducted += r.hours_requested * 60);
+
+  const days = allEntries ? [...new Set(allEntries.filter(e => e.entry_type === 'work' && e.clock_out).map(e => e.clock_in.slice(0,10)))].length : 0;
+  const normalTotal = days * (9 * 60 + 30);
+  const bankMins = totalWorked - normalTotal - deducted;
+
+  const compEl = document.getElementById('comp-card');
+  if (bankMins <= 0) {
+    compEl.innerHTML = `<div class="card-title">${t('compensation')}</div><div class="empty">${t('no_bank')}</div>`;
+    return;
+  }
+
+  compEl.innerHTML = `
+    <div class="card-title">${t('compensation')}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">${t('hour_bank')}: <strong style="color:var(--green);">+${fmtDuration(bankMins)}</strong></div>
+    <select id="comp-type">
+      <option value="money">${t('comp_money')}</option>
+      <option value="time_off">${t('comp_time')}</option>
+    </select>
+    <button class="btn-send" onclick="sendCompRequest(${bankMins})">${t('send_request')} →</button>
+  `;
+}
+
+async function sendCompRequest(bankMins) {
+  const type = document.getElementById('comp-type').value;
+  const { error } = await sb.from('compensation_requests').insert({
+    user_id: currentUser.id,
+    hours_requested: +(bankMins / 60).toFixed(2),
+    type: type,
+    status: 'pending'
+  });
+  if (!error) showToast(t('request_sent'));
+}
+
+// CHEF VIEW
+async function renderChef() {
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="tab-bar">
+      <button class="tab active" onclick="chefTab('team')" id="tab-team">${t('team_tab')}</button>
+      <button class="tab" onclick="chefTab('requests')" id="tab-requests">${t('requests_tab')}</button>
+      <button class="tab" onclick="chefTab('week')" id="tab-week">${t('week_tab')}</button>
+    </div>
+    <div class="tab-content active" id="chef-team"></div>
+    <div class="tab-content" id="chef-requests"></div>
+    <div class="tab-content" id="chef-week"></div>
+  `;
+  await loadChefTeam();
+  await loadChefRequests();
+  await loadChefWeek();
+}
+
+function chefTab(tab) {
+  ['team','requests','week'].forEach(t => {
+    document.getElementById('tab-' + t)?.classList.toggle('active', t === tab);
+    document.getElementById('chef-' + t)?.classList.toggle('active', t === tab);
+  });
+}
+
+async function loadChefTeam() {
+  const { data: pesticeros } = await sb.from('profiles').select('*').eq('role', 'pesticero');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+  for (const p of (pesticeros || [])) {
+    const { data: entries } = await sb.from('time_entries').select('*').eq('user_id', p.id).gte('clock_in', today.toISOString());
+    const active = entries?.find(e => !e.clock_out);
+    let workedMins = 0;
+    entries?.forEach(e => {
+      if (e.clock_out && e.entry_type === 'work') {
+        workedMins += Math.floor((new Date(e.clock_out) - new Date(e.clock_in)) / 60000);
+      }
+    });
+    if (active && active.entry_type === 'work') workedMins += Math.floor((new Date() - new Date(active.clock_in)) / 60000);
+
+    const initials = p.name.split(' ').slice(0,2).map(w => w[0]).join('');
+    const avClass = p.name.includes('Nelson') ? 'av-purple' : 'av-green';
+    const overtime = workedMins - (9 * 60 + 30);
+    const badge = active ? `<span class="badge badge-green">${t('on_shift')}</span>` : `<span class="badge" style="background:var(--surface2);color:var(--text3);">${t('off')}</span>`;
+
+    html += `<div class="team-row">
+      <div class="status-dot ${active ? 'dot-green' : 'dot-gray'}"></div>
+      <div class="avatar ${avClass}">${initials}</div>
+      <div class="team-info">
+        <div class="team-name">${p.name}</div>
+        <div class="team-sub">${active ? (active.entry_type === 'merienda' ? '🍽 Merienda' : fmtTime(active.clock_in) + ' →') : '—'}</div>
+      </div>
+      <div class="team-right">
+        <div class="team-hours">${fmtDuration(workedMins)}</div>
+        ${overtime > 0 ? `<span class="badge badge-amber">+${fmtDuration(overtime)}</span>` : badge}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('chef-team').innerHTML = `<div class="card"><div class="card-title">${t('team_status')}</div>${html || '<div class="empty">—</div>'}</div>`;
+}
+
+async function loadChefRequests() {
+  const { data: requests } = await sb.from('compensation_requests').select('*, profiles(name)').eq('status', 'pending').order('created_at', { ascending: false });
+
+  let html = `<div class="card-title">${t('pending_requests')}</div>`;
+  if (!requests || requests.length === 0) {
+    html += `<div class="empty">${t('no_pending')}</div>`;
+    document.getElementById('chef-requests').innerHTML = `<div class="card">${html}</div>`;
+    return;
+  }
+
+  requests.forEach(r => {
+    const typeLabel = r.type === 'money' ? '💵 Dinero' : '⏱ Tiempo libre';
+    html += `<div class="request-card" id="req-${r.id}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong style="font-size:14px;">${r.profiles?.name}</strong>
+        <span class="badge badge-amber">Pendiente</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);">${typeLabel} · ${fmtDuration(r.hours_requested * 60)}</div>
+      <div class="req-actions">
+        <button class="btn-approve" onclick="handleRequest('${r.id}','approved')">${t('approve')}</button>
+        <button class="btn-deny" onclick="handleRequest('${r.id}','denied')">${t('deny')}</button>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('chef-requests').innerHTML = html;
+}
+
+async function handleRequest(id, status) {
+  await sb.from('compensation_requests').update({ status }).eq('id', id);
+  const card = document.getElementById('req-' + id);
+  if (card) {
+    card.className = 'request-card ' + (status === 'approved' ? 'approved' : 'denied');
+    card.querySelector('.req-actions').innerHTML = `<span style="font-size:13px;font-weight:500;color:${status === 'approved' ? 'var(--green)' : 'var(--text3)'};">${status === 'approved' ? t('approved') : t('denied')}</span>`;
+    card.querySelector('.badge').textContent = status === 'approved' ? t('approved') : t('denied');
+    card.querySelector('.badge').className = 'badge ' + (status === 'approved' ? 'badge-green' : '');
+  }
+  showToast(status === 'approved' ? t('approved') : t('denied'));
+}
+
+async function loadChefWeek() {
+  const { data: pesticeros } = await sb.from('profiles').select('*').eq('role', 'pesticero');
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+  weekStart.setHours(0,0,0,0);
+
+  let html = `<div class="card"><div class="card-title">${t('week_summary')}</div>`;
+  for (const p of (pesticeros || [])) {
+    const { data: entries } = await sb.from('time_entries').select('*').eq('user_id', p.id).gte('clock_in', weekStart.toISOString());
+    let workedMins = 0;
+    entries?.forEach(e => {
+      if (e.clock_out && e.entry_type === 'work') {
+        workedMins += Math.floor((new Date(e.clock_out) - new Date(e.clock_in)) / 60000);
+      }
+    });
+    const days = entries ? [...new Set(entries.filter(e => e.entry_type==='work' && e.clock_out).map(e => e.clock_in.slice(0,10)))].length : 0;
+    const normal = days * (9*60+30);
+    const overtime = workedMins - normal;
+
+    html += `<div class="week-row">
+      <span style="font-size:14px;font-weight:500;">${p.name.split(' ').slice(0,2).join(' ')}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'DM Mono',monospace;font-size:14px;">${fmtDuration(workedMins)}</span>
+        ${overtime > 0 ? `<span class="badge badge-amber">+${fmtDuration(overtime)}</span>` : overtime < 0 ? `<span class="badge badge-red">${fmtDuration(overtime)}</span>` : `<span class="badge badge-green">${t('normal_hours')}</span>`}
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  document.getElementById('chef-week').innerHTML = html;
+}
+
+// LANG
+async function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('lang-es').classList.toggle('active', lang === 'es');
+  document.getElementById('lang-ht').classList.toggle('active', lang === 'ht');
+  await sb.from('profiles').update({ language: lang }).eq('id', currentUser.id);
+  document.getElementById('top-role').textContent = t('role_' + currentProfile.role);
+  if (currentProfile.role === 'pesticero') await refreshPesticeroState();
+}
+
+// AUTO LOGIN CHECK
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session?.user) initApp(session.user);
+});
+</script>
+</body>
+</html>
