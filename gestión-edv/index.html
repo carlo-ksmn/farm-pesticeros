@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Equinoterapia EDV · Gestión</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F7F3EE;
+    --surface: #FFFFFF;
+    --surface2: #EDE8E0;
+    --text: #1A1714;
+    --text2: #6B6358;
+    --text3: #9E9890;
+    --primary: #C17E3A;
+    --primary-dark: #A0673A;
+    --primary-light: #F5E6D3;
+    --brown: #6B4F35;
+    --brown-light: #EDE0D4;
+    --green: #4A9B6F;
+    --green-light: #D6EDE2;
+    --red: #C1121F;
+    --red-light: #FFE5E7;
+    --amber: #9C6200;
+    --amber-light: #FFF0C8;
+    --blue: #1B4F72;
+    --blue-light: #D6EAF8;
+    --purple: #5B3A8A;
+    --purple-light: #EDE0F5;
+    --border: rgba(26,23,20,0.10);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+
+  /* AUTH */
+  #auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 2rem; }
+  .auth-title { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; text-align: center; color: var(--primary-dark); }
+  .auth-sub { font-size: 14px; color: var(--text2); text-align: center; margin-top: -1.5rem; }
+  .auth-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1.5rem; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  input[type="email"], input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.15s; }
+  input:focus { border-color: var(--primary); }
+  .btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+  .btn-primary:active { transform: scale(0.98); background: var(--primary-dark); }
+  .auth-error { font-size: 13px; color: var(--red); text-align: center; padding: 8px; background: var(--red-light); border-radius: var(--radius-sm); display: none; }
+
+  /* APP SHELL */
+  #app-screen { display: none; min-height: 100vh; flex-direction: column; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-info { display: flex; flex-direction: column; }
+  .topbar-name { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+  .topbar-role { font-size: 11px; color: var(--text3); }
+  .lang-pill { display: flex; background: var(--surface2); border-radius: 20px; padding: 3px; gap: 2px; }
+  .lang-opt { padding: 4px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; border: none; background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .lang-opt.active { background: var(--surface); color: var(--text); font-weight: 500; }
+  .logout-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 20px; padding: 4px; }
+  .content { padding: 20px; flex: 1; }
+
+  /* CARDS */
+  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 12px; }
+  .card-title { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }
+
+  /* CLOCK */
+  .clock-display { font-family: 'DM Mono', monospace; font-size: 52px; font-weight: 400; letter-spacing: -2px; text-align: center; padding: 1rem 0 0.5rem; color: var(--text); }
+  .clock-date { text-align: center; font-size: 13px; color: var(--text3); margin-bottom: 1.25rem; }
+  .punch-btn { width: 100%; padding: 16px; border-radius: var(--radius-sm); border: none; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: -0.2px; }
+  .punch-btn.in { background: var(--primary); color: white; }
+  .punch-btn.in:active { background: var(--primary-dark); transform: scale(0.98); }
+  .punch-btn.out { background: var(--red); color: white; }
+  .punch-btn.out:active { background: #8B0000; transform: scale(0.98); }
+  .punch-btn.break { background: var(--amber-light); color: var(--amber); border: 1px solid rgba(156,98,0,0.2); }
+  .punch-btn.break-end { background: var(--amber); color: white; }
+  .punch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .session-info { text-align: center; font-size: 13px; color: var(--text2); margin: 8px 0 12px; min-height: 18px; }
+
+  /* GPS */
+  .gps-banner { background: var(--red-light); border: 1px solid rgba(193,18,31,0.2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--red); text-align: center; margin-bottom: 10px; display: none; }
+
+  /* METRICS */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px; }
+  .metric-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-val { font-size: 22px; font-weight: 500; font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+  .metric-val.positive { color: var(--primary); }
+  .metric-val.neutral { color: var(--text); }
+  .metric-val.purple { color: var(--purple); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+  .badge-primary { background: var(--primary-light); color: var(--primary-dark); }
+  .badge-brown { background: var(--brown-light); color: var(--brown); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+
+  /* LOG ROWS */
+  .log-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .log-row:last-child { border-bottom: none; }
+  .log-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); }
+
+  /* TASK LIST */
+  .task-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); background: var(--bg); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
+  .task-check.done { background: var(--green); border-color: var(--green); color: white; }
+  .task-check.weekly-done { background: var(--primary); border-color: var(--primary); color: white; }
+  .task-body { flex: 1; }
+  .task-name { font-size: 14px; font-weight: 500; }
+  .task-name.done { text-decoration: line-through; color: var(--text3); }
+  .task-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .task-soll { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .task-stamp { font-size: 11px; color: var(--green); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .task-late { font-size: 11px; color: var(--red); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .task-points { font-size: 11px; color: var(--purple); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .btn-add-today { font-size: 11px; padding: 3px 8px; background: var(--primary-light); color: var(--primary-dark); border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+
+  /* COMPENSATION */
+  select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; margin-bottom: 10px; outline: none; }
+  .btn-send { width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); cursor: pointer; transition: background 0.15s; }
+  .btn-send:hover { background: var(--surface2); }
+  .btn-send-locked { width: 100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text3); cursor: not-allowed; text-align: center; }
+  .dop-display { background: var(--primary-light); border-radius: var(--radius-sm); padding: 12px; text-align: center; margin-bottom: 10px; }
+  .dop-amount { font-size: 28px; font-weight: 600; color: var(--primary-dark); font-family: 'DM Mono', monospace; }
+  .dop-label { font-size: 11px; color: var(--brown); opacity: 0.8; margin-top: 2px; }
+
+  /* CHEF TEAM */
+  .team-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; border-radius: 4px; }
+  .team-row:last-child { border-bottom: none; }
+  .team-row:active { background: var(--surface2); }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .av-primary { background: var(--primary-light); color: var(--primary-dark); }
+  .av-brown { background: var(--brown-light); color: var(--brown); }
+  .av-purple { background: var(--purple-light); color: var(--purple); }
+  .av-blue { background: var(--blue-light); color: var(--blue); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--green); }
+  .dot-gray { background: var(--text3); }
+  .team-info { flex: 1; }
+  .team-name { font-size: 14px; font-weight: 500; }
+  .team-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+  .team-right { text-align: right; }
+  .team-hours { font-size: 14px; font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  /* REQUESTS */
+  .request-card { border-left: 3px solid var(--primary); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; background: var(--surface); border-top: 1px solid var(--border); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 1rem; margin-bottom: 8px; }
+  .request-card.approved { border-left-color: var(--green); }
+  .request-card.denied { border-left-color: var(--text3); opacity: 0.5; }
+  .req-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-approve { flex: 1; padding: 8px; background: var(--green); color: white; border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-deny { flex: 1; padding: 8px; background: var(--red-light); color: var(--red); border: 1px solid rgba(193,18,31,0.2); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+  /* TABS */
+  .tab-bar { display: flex; background: var(--surface2); border-radius: 12px; padding: 3px; margin-bottom: 16px; gap: 3px; overflow-x: auto; }
+  .tab { flex: 1; padding: 8px 6px; border: none; border-radius: 9px; background: transparent; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; text-align: center; white-space: nowrap; }
+  .tab.active { background: var(--surface); color: var(--text); font-weight: 500; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* CHEF TASK VIEW */
+  .chef-task-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .chef-task-item:last-child { border-bottom: none; }
+  .chef-task-left { flex: 1; }
+  .chef-task-name { font-size: 13px; font-weight: 500; }
+  .chef-task-soll { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .chef-task-right { text-align: right; flex-shrink: 0; }
+  .chef-task-ist { font-size: 12px; font-family: 'DM Mono', monospace; }
+
+  /* WEEK ROW */
+  .week-row { display: flex; justify-content: space-between; font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: center; }
+  .week-row:last-child { border-bottom: none; }
+
+  /* HISTORY DRAWER */
+  .history-day { margin-bottom: 12px; }
+  .history-day-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .history-entry { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .history-entry:last-child { border-bottom: none; }
+  .history-type { color: var(--text2); }
+  .history-time { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); }
+  .history-total { font-size: 12px; font-weight: 600; color: var(--primary-dark); margin-top: 4px; text-align: right; }
+
+  /* CALENDAR */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-nav { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; color: var(--text); }
+  .cal-nav:active { background: var(--surface2); }
+  .cal-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 12px; }
+  .cal-day-header { text-align: center; font-size: 10px; font-weight: 500; color: var(--text3); padding: 4px 0; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-day { min-height: 44px; border-radius: 8px; padding: 4px; cursor: pointer; transition: background 0.1s; position: relative; border: 1px solid transparent; }
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day.today { border-color: var(--primary); }
+  .cal-day.selected { background: var(--primary-light); border-color: var(--primary); }
+  .cal-day.other-month { opacity: 0.35; }
+  .cal-day-num { font-size: 12px; font-weight: 500; text-align: center; color: var(--text); margin-bottom: 2px; }
+  .cal-day.today .cal-day-num { color: var(--primary-dark); font-weight: 600; }
+  .cal-dot-row { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .cal-dot-daily { background: var(--primary); }
+  .cal-dot-weekly { background: var(--blue); }
+  .cal-dot-monthly { background: var(--amber); }
+  .cal-dot-extra { background: var(--green); }
+  .cal-day-detail { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1rem; margin-bottom: 12px; }
+  .cal-detail-date { font-size: 13px; font-weight: 600; color: var(--primary-dark); margin-bottom: 10px; }
+  .cal-task-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .cal-task-row:last-child { border-bottom: none; }
+  .cal-task-info { flex: 1; }
+  .cal-task-name { font-size: 13px; font-weight: 500; }
+  .cal-task-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .cal-task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-cal-edit { font-size: 11px; padding: 3px 8px; background: var(--surface2); border: none; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text2); }
+  .btn-cal-del { font-size: 11px; padding: 3px 8px; background: var(--red-light); border: none; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--red); }
+  .btn-cal-add { width: 100%; padding: 10px; background: var(--primary-light); border: 1px dashed var(--primary); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--primary-dark); cursor: pointer; font-weight: 500; margin-top: 8px; }
+
+  /* POINTS */
+  .points-display { background: var(--purple-light); border-radius: var(--radius-sm); padding: 12px; text-align: center; margin-bottom: 10px; }
+  .points-amount { font-size: 28px; font-weight: 600; color: var(--purple); font-family: 'DM Mono', monospace; }
+  .points-label { font-size: 11px; color: var(--purple); opacity: 0.8; margin-top: 2px; }
+  .ranking-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .ranking-row:last-child { border-bottom: none; }
+  .ranking-pos { font-size: 16px; font-weight: 600; color: var(--text3); min-width: 24px; font-family: 'DM Mono', monospace; }
+  .ranking-pos.gold { color: #B8860B; }
+  .ranking-pos.silver { color: #708090; }
+  .ranking-pos.bronze { color: #8B4513; }
+
+  /* WEEKLY CHEF SECTION */
+  .weekly-chef-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .weekly-chef-item:last-child { border-bottom: none; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; transition: transform 0.3s ease; z-index: 200; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; color: var(--text3); font-size: 14px; padding: 2rem 0; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin: 16px 0 8px; }
+
+  /* MODALS */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; display: flex; align-items: flex-end; }
+  .modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 480px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 12px; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .modal-close { background: none; border: none; font-size: 20px; color: var(--text3); cursor: pointer; margin-left: auto; }
+  .form-row { display: flex; flex-direction: column; gap: 4px; }
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; }
+  .form-input:focus { border-color: var(--primary); }
+  .person-toggle-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .person-toggle { flex: 1; min-width: 80px; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; text-align: center; transition: all 0.15s; color: var(--text2); }
+  .person-toggle.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); font-weight: 500; }
+  .recurrence-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rec-opt { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; color: var(--text2); transition: all 0.15s; }
+  .rec-opt.selected { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); font-weight: 500; }
+  .extra-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: var(--primary-light); color: var(--primary-dark); font-weight: 500; white-space: nowrap; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div style="text-align:center;">
+    <img src="/logo.png" alt="Equinoterapia EDV" style="width:120px;height:auto;margin-bottom:0.5rem;">
+  </div>
+  <div>
+    <div class="auth-title">Equinoterapia EDV · Gestión</div>
+    <div class="auth-sub" style="margin-top:6px;">Inicia sesión para continuar</div>
+  </div>
+  <div class="auth-card">
+    <div>
+      <div class="field-label">Correo electrónico</div>
+      <input type="email" id="auth-email" placeholder="tu@correo.com" autocomplete="email">
+    </div>
+    <div>
+      <div class="field-label">Contraseña</div>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn-primary" onclick="login()" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="flex-direction:column;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="/logo.png" alt="EDV" style="height:30px;width:auto;opacity:0.9;">
+      <div class="topbar-info">
+        <div class="topbar-name" id="top-name">—</div>
+        <div class="topbar-role" id="top-role">—</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="lang-pill" id="lang-pill" style="display:none;">
+        <button class="lang-opt active" id="lang-es" onclick="setLang('es')">🇩🇴 ES</button>
+        <button class="lang-opt" id="lang-ht" onclick="setLang('ht')">🇭🇹 HT</button>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Salir">⏏</button>
+    </div>
+  </div>
+  <div class="content" id="main-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- EXTRA TASK MODAL -->
+<div class="modal-overlay" id="extra-modal" style="display:none;" onclick="if(event.target===this)closeExtraModal()">
+  <div class="modal-sheet">
+    <div style="display:flex;align-items:center;">
+      <div class="modal-title" id="extra-modal-title">Nueva tarea</div>
+      <button class="modal-close" onclick="closeExtraModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="field-label">Nombre de la tarea</div>
+      <input class="form-input" id="et-name" placeholder="Ej: Limpiar almacén" type="text">
+    </div>
+    <div class="form-row">
+      <div class="field-label">🇭🇹 Versión en kreyòl <span style="font-weight:400;color:var(--text3);">(opcional)</span></div>
+      <input class="form-input" id="et-name-ht" placeholder="Ej: Netwaye depo a" type="text">
+    </div>
+    <div class="form-row">
+      <div class="field-label">Asignar a</div>
+      <div class="person-toggle-row" id="et-persons"></div>
+    </div>
+    <div class="form-row">
+      <div class="field-label">Fecha</div>
+      <input class="form-input" id="et-date" type="date">
+    </div>
+    <div class="form-row">
+      <div class="field-label">Hora de inicio (opcional)</div>
+      <input class="form-input" id="et-time" type="time">
+    </div>
+    <div class="form-row">
+      <div class="field-label">Duración estimada (minutos)</div>
+      <input class="form-input" id="et-dur" placeholder="Ej: 45" type="number" min="5" max="480">
+    </div>
+    <div class="form-row">
+      <div class="field-label">Nota (opcional)</div>
+      <input class="form-input" id="et-note" placeholder="Instrucciones adicionales…" type="text">
+    </div>
+    <div class="form-row">
+      <div class="field-label">Repetición</div>
+      <div class="recurrence-row">
+        <button class="rec-opt selected" data-val="once" onclick="selectRec(this)">Solo esta vez</button>
+        <button class="rec-opt" data-val="daily" onclick="selectRec(this)">Cada día</button>
+        <button class="rec-opt" data-val="weekly" onclick="selectRec(this)">Cada semana</button>
+        <button class="rec-opt" data-val="mon-fri" onclick="selectRec(this)">Lun–Vie</button>
+      </div>
+    </div>
+    <input type="hidden" id="et-edit-id">
+    <button class="btn-primary" onclick="saveExtraTask()" style="margin-top:4px;" id="et-save-btn">Guardar tarea →</button>
+  </div>
+</div>
+
+<!-- HISTORY DRAWER -->
+<div class="modal-overlay" id="history-modal" style="display:none;" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="modal-sheet">
+    <div style="display:flex;align-items:center;margin-bottom:4px;">
+      <div class="modal-title" id="history-modal-title">Historial</div>
+      <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div id="history-modal-content"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://yetymoqipucvdsfwiqdy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlldHltb3FpcHVjdmRzZndpcWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MjI3ODQsImV4cCI6MjA5MTM5ODc4NH0.Tt-q2FLQ95rrd-npC2AcHrENjIogGaQqrkszOHu-dTA';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const FARM_LAT = 19.663198;
+const FARM_LNG = -69.943220;
+const FARM_RADIUS_M = 200;
+
+const HOURLY_RATES = {
+  'Gilberto Arturo Mena Santos': 107,
+  'Nelson Gentz Jerlentzky': 77
+};
+
+// 1 punto = 1 minuto = (tasa/60) DOP
+// Puntos por tarea adelantada: minutos ahorrados
+// Puntos por horas extra: minutos extra trabajados
+
+const DAILY_TASKS = {
+  arturo: [
+    { id: 'a1',  time: '06:30', dur: 10,  name: 'Recorrido general',                      name_ht: 'Wè sa k ap pase' },
+    { id: 'a2',  time: '06:40', dur: 15,  name: 'Preparar y dar comida a los cerdos',     name_ht: 'Prepare ak bay kochon manje' },
+    { id: 'a3',  time: '06:55', dur: 20,  name: 'Alimentar caballos (con preparación)',   name_ht: 'Bay chwal manje (ak preparasyon)' },
+    { id: 'a4',  time: '07:15', dur: 5,   name: 'Alimentar conejos',                      name_ht: 'Bay lapen manje' },
+    { id: 'a5',  time: '07:20', dur: 30,  name: 'Hornear (con preparación)',              name_ht: 'Kwit (ak preparasyon)' },
+    { id: 'a6',  time: '07:50', dur: 130, name: 'Picadera a todos los caballos y peinar', name_ht: 'Pikade ak penyen tout chwal yo' },
+    { id: 'a7',  time: '14:00', dur: 10,  name: 'Otro recorrido y agua a conejos',        name_ht: 'Yon lòt wòn ak dlo pou lapen yo' },
+    { id: 'a8',  time: '17:40', dur: 20,  name: 'Alimentar caballos (con preparación) · tarde', name_ht: 'Bay chwal manje (ak preparasyon) · aprèmidi' },
+  ],
+  nelson: [
+    { id: 'n1',  time: '06:30', dur: 75, name: 'Limpiar jaulas (todas)',                         name_ht: 'Netwaye tout kaj yo' },
+    { id: 'n2',  time: '07:45', dur: 10, name: 'Echar viruta (1 saco por jaula)',                name_ht: 'Mete kopewo (1 sak pa kaj)' },
+    { id: 'n3',  time: '07:55', dur: 25, name: 'Echar pacas que faltan',                         name_ht: 'Mete bal zèb ki manke' },
+    { id: 'n4',  time: '08:20', dur: 10, name: 'Sacar sacos de abono',                           name_ht: 'Retire sak fimye yo' },
+    { id: 'n5',  time: '08:30', dur: 5,  name: 'Barrer el pasillo',                              name_ht: 'Bale koulwa a' },
+    { id: 'n6',  time: '08:35', dur: 20, name: 'Paca para caballos sueltos y vaca lactante',     name_ht: 'Bal zèb pou chwal lib ak vach k ap bay lèt' },
+    { id: 'n7',  time: '08:55', dur: 5,  name: 'Agua para los kikis',                            name_ht: 'Dlo pou kiki yo' },
+    { id: 'n8',  time: '09:00', dur: 5,  name: 'Agua para las gallinas',                         name_ht: 'Dlo pou poul yo' },
+    { id: 'n9',  time: '09:05', dur: 20, name: 'Preparar alfalfa',                               name_ht: 'Prepare alfafa' },
+    { id: 'n10', time: '09:25', dur: 5,  name: 'Alfalfa para Martina y Celeste',                 name_ht: 'Alfafa pou Martina ak Selèst' },
+    { id: 'n11', time: '09:30', dur: 5,  name: 'Comida y bebederos de periquitos',               name_ht: 'Manje ak dlo pou perikito yo' },
+    { id: 'n12', time: '11:50', dur: 10, name: 'Alfalfa caballos · turno almuerzo',              name_ht: 'Alfafa chwal · tan midi' },
+    { id: 'n13', time: '14:00', dur: 20, name: 'Bañar los cerdos',                               name_ht: 'Benyen kochon yo' },
+    { id: 'n14', time: '14:20', dur: 5,  name: 'Llenar tanque de la vaca',                       name_ht: 'Plen tank vach la' },
+    { id: 'n15', time: '17:40', dur: 20, name: 'Dar comida a los cerdos y gallinas (con preparación)', name_ht: 'Bay kochon ak poul manje (ak preparasyon)' },
+  ],
+  administradora: [
+    { id: 'ad1', time: '08:00', dur: 30, name: 'Revisión de correos y mensajes', name_ht: 'Revizyon imèl ak mesaj' },
+    { id: 'ad2', time: '08:30', dur: 20, name: 'Revisión de agenda del día',     name_ht: 'Revizyon ajanda jounen' },
+    { id: 'ad3', time: '09:00', dur: 60, name: 'Gestión administrativa',          name_ht: 'Jesyon administratif' },
+    { id: 'ad4', time: '14:00', dur: 30, name: 'Revisión de reportes',           name_ht: 'Revizyon rapò' },
+    { id: 'ad5', time: '16:00', dur: 20, name: 'Cierre del día',                 name_ht: 'Fèmen jounen' },
+  ],
+  voluntario: [
+    { id: 'v1', time: '07:00', dur: 60, name: 'Apoyo actividades matutinas',  name_ht: 'Sipò aktivite maten' },
+    { id: 'v2', time: '09:00', dur: 60, name: 'Apoyo terapias',               name_ht: 'Sipò terapi' },
+    { id: 'v3', time: '14:00', dur: 60, name: 'Apoyo actividades vespertinas',name_ht: 'Sipò aktivite aprèmidi' },
+  ]
+};
+
+const WEEKLY_TASKS = [
+  { id: 'w1',  name: 'Buscar viruta',                                    freq: 2, dur: 90  },
+  { id: 'w2',  name: 'Limpiar bebederos de gallinas',                    freq: 1, dur: 10  },
+  { id: 'w3',  name: 'Limpiar bebederos de conejos',                     freq: 1, dur: 10  },
+  { id: 'w4',  name: 'Limpiar bebederos y comedores caballos',           freq: 1, dur: 45  },
+  { id: 'w5',  name: 'Barrer área entrada y de niños',                   freq: 1, dur: 60  },
+  { id: 'w6',  name: 'Barrer el patio',                                  freq: 1, dur: 45  },
+  { id: 'w7',  name: 'Limpiar una jaula entera',                         freq: 1, dur: 150 },
+  { id: 'w8',  name: 'Limpiar las dos piletas',                          freq: 1, dur: 45  },
+  { id: 'w9',  name: 'Echar viruta a gallinas + limpiar jaulas gallinas',freq: 1, dur: 30  },
+  { id: 'w10', name: 'Organizar y barrer el almacén arriba',             freq: 1, dur: 30  },
+  { id: 'w11', name: 'Organizar y barrer el almacén abajo',             freq: 1, dur: 30  },
+  { id: 'w12', name: 'Recorrido general con machete, martillo y grampas',freq: 1, dur: 45  },
+  { id: 'w13', name: 'Limpiar jaula y tanque de la vaca',                freq: 1, dur: 30  },
+  { id: 'w14', name: 'Limpiar el tronco de las matas',                   freq: 1, dur: 60  },
+];
+
+const BIWEEKLY_TASKS = [
+  { id: 'b1', name: 'Limpiar el conuco · quitar la maleza', dur: 120 },
+];
+
+const MONTHLY_TASKS_ARTURO = [
+  { id: 'm1', name: 'Reglar los cascos · Lola',       dur: 60 },
+  { id: 'm2', name: 'Reglar los cascos · Carpintero', dur: 60 },
+  { id: 'm3', name: 'Reglar los cascos · Picasso',    dur: 60 },
+  { id: 'm4', name: 'Reglar los cascos · Bella',      dur: 60 },
+  { id: 'm5', name: 'Reglar los cascos · Manuelito',  dur: 60 },
+  { id: 'm6', name: 'Reglar los cascos · Chucho',     dur: 60 },
+  { id: 'm7', name: 'Reglar los cascos · Belén',      dur: 60 },
+];
+
+let currentUser = null, currentProfile = null, currentLang = 'es';
+let clockInterval = null, activeEntry = null;
+let calendarDate = new Date();
+let calSelectedDate = null;
+let allWorkers = [];
+
+// ─── QUINCENAL helpers ───────────────────────────────────────────
+function getQuincenaStart(date) {
+  const d = date || new Date();
+  const day = d.getDate();
+  return new Date(d.getFullYear(), d.getMonth(), day <= 15 ? 1 : 16);
+}
+function getQuincenaEnd(date) {
+  const d = date || new Date();
+  const day = d.getDate();
+  if (day <= 15) return new Date(d.getFullYear(), d.getMonth(), 15);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+function isRequestWindowOpen() {
+  const d = new Date().getDate();
+  return d >= 13 && d <= 15 || d >= 28;
+}
+
+// ─── TRANSLATIONS ────────────────────────────────────────────────
+const T = {
+  es: {
+    role_pesticero: 'Pesticero', role_chef: 'Chef', role_presidente: 'Presidente',
+    role_vicepresidente: 'Vicepresidente', role_administradora: 'Administradora', role_voluntario: 'Voluntario',
+    touch_worker: 'Toca un trabajador para ver su historial',
+    last_30_days: 'Últimos 30 días', loading: 'Cargando…', no_records: 'Sin registros',
+    worked: 'trabajados', pending_badge: 'Pendiente', weekly_tasks_label: 'Tareas semanales',
+    this_week: 'Esta sem.', period_info: '🔒 Solicitudes: del 13–15 y del 28 al fin de mes',
+    type_money: '💵 Dinero', type_time: '⏱ Tiempo libre',
+    err_name: '⚠ Escribe el nombre', err_person: '⚠ Selecciona al menos una persona',
+    err_date: '⚠ Selecciona una fecha', err_save: 'Error al guardar',
+    rec_once: 'Extra', rec_daily: 'Diaria', rec_weekly: 'Semanal', rec_monfri: 'Lun–Vie',
+    biweekly_tasks: 'Tareas cada 2 semanas', monthly_tasks: 'Tareas mensuales',
+    biweekly_badge: 'Cada 2 sem.', monthly_badge: 'Mensual',
+    clock_in: 'Registrar entrada', clock_out: 'Registrar salida',
+    merienda_start: 'Iniciar merienda', merienda_end: 'Fin de merienda',
+    today: 'Hoy', overtime: 'Puntos extra',
+    hour_bank: 'Banco de puntos', history: 'Historial de hoy',
+    entry_work_in: 'Entrada', entry_work_out: 'Salida',
+    entry_merienda_in: 'Inicio merienda', entry_merienda_out: 'Fin merienda',
+    compensation: 'Solicitar compensación (quincenal)',
+    comp_money: 'Pago en dinero extra', comp_time: 'Tiempo libre (salir antes)',
+    send_request: 'Enviar solicitud al chef', no_bank: 'Sin puntos acumulados aún',
+    team_status: 'Estado del equipo', pending_requests: 'Solicitudes pendientes',
+    week_summary: 'Resumen quincenal', plan_tab: 'Plan',
+    approve: 'Aprobar', deny: 'Rechazar',
+    approved: 'Aprobado ✓', denied: 'Rechazado',
+    no_pending: 'Sin solicitudes pendientes',
+    requests_tab: 'Solicitudes', team_tab: 'Equipo', week_tab: 'Reportes',
+    calendar_tab: 'Calendario',
+    on_shift: 'En turno', off: 'Libre', normal_hours: 'En hora',
+    session_active: 'Turno activo desde las', session_none: 'Sin turno activo',
+    break_active: 'En merienda desde las',
+    punched_in: 'Entrada registrada', punched_out: 'Salida registrada',
+    break_started: 'Merienda iniciada', break_ended: 'Merienda terminada',
+    break_already: 'Merienda ya tomada hoy', break_no_pm: 'Merienda solo disponible en la mañana (06:30–12:00)',
+    request_sent: 'Solicitud enviada al chef',
+    gps_blocked: '📍 Debes estar en la finca para fichar',
+    gps_checking: 'Verificando ubicación…',
+    daily_plan: 'Plan del día', weekly_tasks: 'Tareas semanales',
+    add_today: '+ Hoy', completed_at: 'Listo',
+    late_by: 'Atraso', overtime_dop: 'Valor en efectivo',
+    task_done: '✓ Tarea completada', weekly_added: 'Tarea añadida al plan de hoy',
+    comp_locked: '🔒 Solicitudes disponibles del 13–15 y del 28 al fin de mes',
+    points: 'Puntos', points_earned: 'pts ganados',
+    fast_badge: '⚡', ranking: 'Ranking quincenal',
+    cal_add_task: '+ Añadir tarea a este día',
+    edit: 'Editar', delete: 'Eliminar',
+    task_deleted: 'Tarea eliminada',
+  },
+  ht: {
+    role_pesticero: 'Pesticero', role_chef: 'Chèf', role_presidente: 'Prezidan',
+    role_vicepresidente: 'Vis-prezidan', role_administradora: 'Administratè', role_voluntario: 'Volontè',
+    touch_worker: 'Klike sou yon travayè pou wè istwa li',
+    last_30_days: 'Dènye 30 jou', loading: 'Ap chaje…', no_records: 'Pa gen anrejistreman',
+    worked: 'travay fèt', pending_badge: 'Annatant', weekly_tasks_label: 'Travay chak semèn',
+    this_week: 'Semèn sa.', period_info: '🔒 Demann: 13–15 ak 28 jiska dènye jou mwa a',
+    type_money: '💵 Lajan', type_time: '⏱ Tan lib',
+    err_name: '⚠ Ekri non travay la', err_person: '⚠ Chwazi omwen yon moun',
+    err_date: '⚠ Chwazi yon dat', err_save: 'Erè pandan konsèvasyon',
+    rec_once: 'Yon fwa', rec_daily: 'Chak jou', rec_weekly: 'Chak semèn', rec_monfri: 'Lun–Ven',
+    biweekly_tasks: 'Travay chak 2 semèn', monthly_tasks: 'Travay chak mwa',
+    biweekly_badge: 'Chak 2 semèn', monthly_badge: 'Chak mwa',
+    clock_in: 'Antre nan travay', clock_out: 'Soti nan travay',
+    merienda_start: 'Kòmanse manje', merienda_end: 'Fini manje',
+    today: 'Jodi a', overtime: 'Pwen siplemantè',
+    hour_bank: 'Bank pwen', history: 'Istwa jodi a',
+    entry_work_in: 'Antre', entry_work_out: 'Soti',
+    entry_merienda_in: 'Kòmanse manje', entry_merienda_out: 'Fini manje',
+    compensation: 'Mande konpansasyon (chak 15 jou)',
+    comp_money: 'Peye ak lajan', comp_time: 'Tan lib (soti bonè)',
+    send_request: 'Voye demann bay chèf la', no_bank: 'Pa gen pwen akimile',
+    team_status: 'Estati ekip la', pending_requests: 'Demann ki annatant',
+    week_summary: 'Rezime kinzèn', plan_tab: 'Plan',
+    approve: 'Apwouve', deny: 'Refize',
+    approved: 'Apwouve ✓', denied: 'Refize',
+    no_pending: 'Pa gen demann annatant',
+    requests_tab: 'Demann', team_tab: 'Ekip', week_tab: 'Rapò',
+    calendar_tab: 'Kalandriye',
+    on_shift: 'Ap travay', off: 'Lib', normal_hours: 'Nòmal',
+    session_active: 'Travay kòmanse nan', session_none: 'Pa gen travay aktif',
+    break_active: 'Ap manje depi',
+    punched_in: 'Antre anrejistre', punched_out: 'Soti anrejistre',
+    break_started: 'Manje kòmanse', break_ended: 'Manje fini',
+    break_already: 'Manje deja pran jodi a', break_no_pm: 'Manje disponib maten sèlman (06:30–12:00)',
+    request_sent: 'Demann voye bay chèf la',
+    gps_blocked: '📍 Ou dwe nan fèm pou anrejistre',
+    gps_checking: 'Ap verifye kote ou ye…',
+    daily_plan: 'Plan jounen', weekly_tasks: 'Travay chak semèn',
+    add_today: '+ Jodi', completed_at: 'Fini',
+    late_by: 'Reta', overtime_dop: 'Valè an kach',
+    task_done: '✓ Travay fini', weekly_added: 'Travay ajoute nan plan jodi a',
+    comp_locked: '🔒 Demann disponib 13–15 ak 28 jiska dènye jou mwa a',
+    points: 'Pwen', points_earned: 'pwen',
+    fast_badge: '⚡', ranking: 'Klasman kinzèn',
+    cal_add_task: '+ Ajoute travay jou sa a',
+    edit: 'Modifye', delete: 'Efase',
+    task_deleted: 'Travay efase',
+  }
+};
+
+function t(key) { return T[currentLang]?.[key] || T['es']?.[key] || key; }
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmtTime(date) { if (!date) return '—'; const d = new Date(date); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function fmtDuration(minutes) { const h = Math.floor(Math.abs(minutes)/60); const m = Math.abs(minutes)%60; return (minutes<0?'-':'')+h+'h '+pad(m)+'m'; }
+function fmtDate(d) {
+  const days_es = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const days_ht = ['Dimanch','Lendi','Madi','Mèkredi','Jedi','Vandredi','Samdi'];
+  const months_es = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const months_ht = ['jan','fev','mas','avr','me','jen','jiy','out','sep','okt','nov','des'];
+  const days = currentLang==='ht' ? days_ht : days_es;
+  const months = currentLang==='ht' ? months_ht : months_es;
+  return days[d.getDay()]+', '+d.getDate()+' '+months[d.getMonth()];
+}
+function fmtDateShort(str) {
+  const d = new Date(str+'T12:00:00');
+  const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
+}
+function showToast(msg) { const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2500); }
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function getWeekStart() { const d=new Date(); const day=d.getDay(); d.setDate(d.getDate()-day+(day===0?-6:1)); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+
+// ─── GPS ──────────────────────────────────────────────────────────
+function haversineM(lat1,lng1,lat2,lng2) { const R=6371000; const dLat=(lat2-lat1)*Math.PI/180; const dLng=(lng2-lng1)*Math.PI/180; const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
+function getPosition() { return new Promise((resolve,reject)=>{ if(!navigator.geolocation){reject(new Error('no_geo'));return;} navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:10000,maximumAge:30000}); }); }
+async function checkGps() { try { const pos=await getPosition(); const dist=haversineM(FARM_LAT,FARM_LNG,pos.coords.latitude,pos.coords.longitude); return {ok:dist<=FARM_RADIUS_M,dist:Math.round(dist)}; } catch(e) { return {ok:false,dist:null,error:true}; } }
+
+// ─── AUTH ─────────────────────────────────────────────────────────
+async function login() {
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-password').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('auth-error');
+  err.style.display='none'; btn.innerHTML='<div class="spinner"></div>'; btn.disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){ err.textContent='Correo o contraseña incorrectos'; err.style.display='block'; btn.textContent='Entrar'; btn.disabled=false; return; }
+  await initApp(data.user);
+}
+async function logout() { await sb.auth.signOut(); clearInterval(clockInterval); document.getElementById('auth-screen').style.display='flex'; document.getElementById('app-screen').style.display='none'; document.getElementById('auth-password').value=''; }
+
+// ─── INIT ─────────────────────────────────────────────────────────
+async function initApp(user) {
+  currentUser=user;
+  const {data:profile}=await sb.from('profiles').select('*').eq('id',user.id).single();
+  currentProfile=profile;
+  const {data:workers}=await sb.from('profiles').select('*').neq('role','chef');
+  allWorkers=workers||[];
+  if(profile.language==='ht'||profile.name?.includes('Nelson')){ document.getElementById('lang-pill').style.display='flex'; currentLang=profile.language||'es'; document.getElementById('lang-es').classList.toggle('active',currentLang==='es'); document.getElementById('lang-ht').classList.toggle('active',currentLang==='ht'); }
+  document.getElementById('top-name').textContent=profile.name||user.email;
+  let roleKey='role_'+profile.role;
+  if(profile.role==='chef'){
+    if(profile.name?.includes('Emilia')) roleKey='role_presidente';
+    else if(profile.name?.includes('Jose')||profile.name?.includes('Ramon')) roleKey='role_vicepresidente';
+  }
+  document.getElementById('top-role').textContent=t(roleKey);
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='flex';
+  const workerRoles=['pesticero','administradora','voluntario'];
+  if(workerRoles.includes(profile.role)) renderWorker(); else renderChef();
+}
+
+function startClock(elId) { clearInterval(clockInterval); function update(){ const now=new Date(); const el=document.getElementById(elId); if(el) el.textContent=pad(now.getHours())+':'+pad(now.getMinutes()); } update(); clockInterval=setInterval(update,60000); }
+
+function getWorkerKey() {
+  const name=currentProfile.name||'';
+  if(name.includes('Nelson')) return 'nelson';
+  if(currentProfile.role==='administradora') return 'administradora';
+  if(currentProfile.role==='voluntario') return 'voluntario';
+  return 'arturo';
+}
+
+// ─── POINTS HELPERS ──────────────────────────────────────────────
+function getRatePerMin(name) {
+  const rate=HOURLY_RATES[name]||90;
+  return rate/60;
+}
+
+async function getTotalPoints(userId, from, to) {
+  // Points from task completions (fast tasks)
+  const {data:pts}=await sb.from('task_points').select('points').eq('user_id',userId).gte('date',from).lte('date',to);
+  const taskPoints=(pts||[]).reduce((s,r)=>s+r.points,0);
+
+  // Points from overtime (1 min overtime = 1 point)
+  const {data:entries}=await sb.from('time_entries').select('*').eq('user_id',userId).gte('clock_in',from+'T00:00:00').lte('clock_in',to+'T23:59:59');
+  let workedMins=0;
+  (entries||[]).forEach(e=>{ if(e.clock_out&&e.entry_type==='work') workedMins+=Math.floor((new Date(e.clock_out)-new Date(e.clock_in))/60000); });
+  const days=(entries||[])?[...new Set((entries||[]).filter(e=>e.entry_type==='work'&&e.clock_out).map(e=>e.clock_in.slice(0,10)))].length:0;
+  const overtimeMins=Math.max(0,workedMins-(days*(9*60+30)));
+
+  return { taskPoints, overtimeMins, total: taskPoints+overtimeMins };
+}
+
+// ─── WORKER VIEW ─────────────────────────────────────────────────
+async function renderWorker() {
+  const content=document.getElementById('main-content');
+  content.innerHTML=`<div class="card"><div class="clock-display" id="main-clock">--:--</div><div class="clock-date" id="main-date"></div><div class="gps-banner" id="gps-banner"></div><div class="session-info" id="session-info"></div><div id="punch-buttons"></div></div><div class="metric-grid-3" id="metrics" style="margin-bottom:12px;"></div><div class="card" id="plan-card"></div><div class="card" id="weekly-card"></div><div class="card" id="biweekly-card"></div><div class="card" id="monthly-card"></div><div class="card" id="history-card"></div><div class="card" id="comp-card"></div>`;
+  document.getElementById('main-date').textContent=fmtDate(new Date());
+  startClock('main-clock');
+  await refreshWorkerState();
+}
+
+async function refreshWorkerState() {
+  const today=new Date(); today.setHours(0,0,0,0);
+  const {data:entries}=await sb.from('time_entries').select('*').eq('user_id',currentUser.id).gte('clock_in',today.toISOString()).order('clock_in',{ascending:true});
+  activeEntry=entries?.find(e=>!e.clock_out)||null;
+  let workedMins=0;
+  const hasMerienda=entries?.some(e=>e.entry_type==='merienda');
+  entries?.forEach(e=>{ if(e.clock_out){ const m=Math.floor((new Date(e.clock_out)-new Date(e.clock_in))/60000); if(e.entry_type==='work') workedMins+=m; } });
+  if(activeEntry?.entry_type==='work') workedMins+=Math.floor((new Date()-new Date(activeEntry.clock_in))/60000);
+  const shiftEnded=!activeEntry&&entries?.some(e=>e.entry_type==='work'&&e.clock_out);
+  if(shiftEnded&&!hasMerienda) workedMins+=30;
+  const overtimeMins=Math.max(0,workedMins-(9*60+30));
+
+  // Points today
+  const todayStr2=todayStr();
+  const {data:todayPts}=await sb.from('task_points').select('points').eq('user_id',currentUser.id).eq('date',todayStr2);
+  const taskPointsToday=(todayPts||[]).reduce((s,r)=>s+r.points,0);
+  const totalPointsToday=taskPointsToday+overtimeMins;
+
+  const sessionEl=document.getElementById('session-info');
+  if(activeEntry){ sessionEl.textContent=activeEntry.entry_type==='merienda'?t('break_active')+' '+fmtTime(activeEntry.clock_in):t('session_active')+' '+fmtTime(activeEntry.clock_in); } else { sessionEl.textContent=t('session_none'); }
+
+  const now=new Date(); const hour=now.getHours(); const mins=now.getMinutes();
+  const inMorningWindow=(hour>6||(hour===6&&mins>=30))&&hour<12;
+  const alreadyTook=entries?.some(e=>e.entry_type==='merienda');
+  const showMerienda=inMorningWindow&&!alreadyTook;
+  const btns=document.getElementById('punch-buttons');
+  if(!activeEntry){ btns.innerHTML=`<button class="punch-btn in" onclick="punchInGps('work')">${t('clock_in')}</button>`; }
+  else if(activeEntry.entry_type==='work'){
+    let mb='';
+    if(showMerienda){ mb=`<button class="punch-btn break" onclick="punchIn('merienda')" style="margin-top:8px;">${t('merienda_start')}</button>`; }
+    else if(alreadyTook){ mb=`<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;">☕ ${t('break_already')}</div>`; }
+    else if(!inMorningWindow){ mb=`<div style="text-align:center;font-size:12px;color:var(--text3);margin-top:8px;">${t('break_no_pm')}</div>`; }
+    btns.innerHTML=`<button class="punch-btn out" onclick="punchOut()">${t('clock_out')}</button>${mb}`;
+  }
+  else if(activeEntry.entry_type==='merienda'){ btns.innerHTML=`<button class="punch-btn break-end" onclick="punchOut()">${t('merienda_end')}</button>`; }
+
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">${t('today')}</div><div class="metric-val neutral">${fmtDuration(workedMins)}</div></div>
+    <div class="metric"><div class="metric-label">${t('overtime')}</div><div class="metric-val ${overtimeMins>0?'positive':'neutral'}">${overtimeMins>0?'+':''}${fmtDuration(overtimeMins)}</div></div>
+    <div class="metric"><div class="metric-label">${t('points')}</div><div class="metric-val purple">${totalPointsToday}</div></div>`;
+
+  await renderDailyPlan();
+  await renderWeeklyTasks();
+  await renderBiweeklyTasks();
+  await renderMonthlyTasks();
+
+  const histEl=document.getElementById('history-card');
+  let histHTML=`<div class="card-title">${t('history')}</div>`;
+  if(!entries||entries.length===0){ histHTML+=`<div class="empty">—</div>`; }
+  else { entries.forEach(e=>{ const typeIn=e.entry_type==='merienda'?t('entry_merienda_in'):t('entry_work_in'); const typeOut=e.entry_type==='merienda'?t('entry_merienda_out'):t('entry_work_out'); histHTML+=`<div class="log-row"><span>${typeIn}</span><span class="log-time">${fmtTime(e.clock_in)}</span></div>`; if(e.clock_out) histHTML+=`<div class="log-row"><span>${typeOut}</span><span class="log-time">${fmtTime(e.clock_out)}</span></div>`; }); }
+  histEl.innerHTML=histHTML;
+
+  await renderCompensation(overtimeMins);
+}
+
+// ─── DAILY PLAN ──────────────────────────────────────────────────
+async function renderDailyPlan() {
+  const key=getWorkerKey(); const tasks=DAILY_TASKS[key]||[]; const today=todayStr();
+  const {data:completions}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).eq('date',today).eq('task_type','daily');
+  const doneMap={}; (completions||[]).forEach(c=>{doneMap[c.task_id]=c.completed_at;});
+  const {data:pointsData}=await sb.from('task_points').select('*').eq('user_id',currentUser.id).eq('date',today);
+  const pointsMap={}; (pointsData||[]).forEach(p=>{pointsMap[p.task_id]=p.points;});
+  const extras=await loadExtraTasks(currentUser.id,today);
+  const {data:extraCompletions}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).eq('date',today).eq('task_type','extra');
+  const extraDoneMap={}; (extraCompletions||[]).forEach(c=>{extraDoneMap[c.task_id]=c.completed_at;});
+  let html=`<div class="card-title">${t('daily_plan')}</div>`; const now=new Date();
+  tasks.forEach(task=>{
+    const isDone=!!doneMap[task.id];
+    const taskName=currentLang==='ht'&&task.name_ht?task.name_ht:task.name;
+    const [sh,sm]=task.time.split(':').map(Number);
+    const sollEnd=new Date(); sollEnd.setHours(sh,sm,0,0); sollEnd.setMinutes(sollEnd.getMinutes()+task.dur);
+    let statusHtml='';
+    if(isDone){
+      const doneDate=new Date(doneMap[task.id]);
+      const lateMins=Math.round((doneDate-sollEnd)/60000);
+      const pts=pointsMap[task.id];
+      if(lateMins<-1&&pts>0){
+        statusHtml=`<div class="task-points">⚡ +${pts} ${t('points_earned')} · ${fmtTime(doneMap[task.id])}</div>`;
+      } else if(lateMins>2){
+        statusHtml=`<div class="task-late">+${lateMins}min ${t('late_by')}</div>`;
+      } else {
+        statusHtml=`<div class="task-stamp">${t('completed_at')} ${fmtTime(doneMap[task.id])}</div>`;
+      }
+    } else if(now>sollEnd){
+      statusHtml=`<div class="task-late">⚠ ${t('late_by')}</div>`;
+    }
+    const ck=isDone?'':'completeTask(\''+task.id+'\',\'daily\')';
+    html+='<div class="task-item"><div class="task-check '+(isDone?'done':'')+'\" onclick="'+ck+'">'+(isDone?'✓':'')+'</div><div class="task-body"><div class="task-name '+(isDone?'done':'')+'">'+taskName+'</div><div class="task-soll">'+task.time+' · '+task.dur+'min</div>'+statusHtml+'</div></div>';
+  });
+  extras.forEach(task=>{
+    const isDone=!!extraDoneMap[task.id];
+    const ck2=isDone?'':'completeTask(\''+task.id+'\',\'extra\')';
+    const extraName=(currentLang==='ht'&&task.name_ht)?task.name_ht:task.name;
+    html+='<div class="task-item"><div class="task-check '+(isDone?'done':'')+'\" onclick="'+ck2+'">'+(isDone?'✓':'')+'</div><div class="task-body"><div class="task-name '+(isDone?'done':'')+'">'+extraName+'<span class="extra-badge">Extra</span></div><div class="task-soll">'+(task.duration_mins?task.duration_mins+'min':'—')+(task.note?' · '+task.note:'')+'</div>'+(isDone?'<div class="task-stamp">'+t('completed_at')+' '+fmtTime(extraDoneMap[task.id])+'</div>':'')+'</div></div>';
+  });
+  document.getElementById('plan-card').innerHTML=html;
+}
+
+// ─── COMPLETE TASK (with points) ─────────────────────────────────
+async function completeTask(taskId, taskType) {
+  const today=todayStr();
+  const now=new Date();
+  const nowIso=now.toISOString();
+
+  // Calculate points for daily tasks
+  let pointsEarned=0;
+  if(taskType==='daily'){
+    const key=getWorkerKey();
+    const tasks=DAILY_TASKS[key]||[];
+    const task=tasks.find(t=>t.id===taskId);
+    if(task){
+      const [sh,sm]=task.time.split(':').map(Number);
+      const sollEnd=new Date(); sollEnd.setHours(sh,sm,0,0); sollEnd.setMinutes(sollEnd.getMinutes()+task.dur);
+      const diffMins=Math.round((sollEnd-now)/60000);
+      if(diffMins>1) pointsEarned=diffMins; // finished early
+    }
+  }
+
+  await sb.from('task_completions').upsert({user_id:currentUser.id,task_id:taskId,date:today,task_type:taskType,completed_at:nowIso},{onConflict:'user_id,task_id,date'});
+
+  if(pointsEarned>0){
+    await sb.from('task_points').upsert({user_id:currentUser.id,task_id:taskId,date:today,points:pointsEarned},{onConflict:'user_id,task_id,date'});
+    showToast('⚡ +'+pointsEarned+' '+t('points_earned'));
+  } else {
+    showToast(t('task_done'));
+  }
+
+  if(taskType==='daily'||taskType==='extra') await renderDailyPlan();
+  else if(taskType==='weekly') await renderWeeklyTasks();
+  else if(taskType==='biweekly') await renderBiweeklyTasks();
+  else if(taskType==='monthly') await renderMonthlyTasks();
+  await refreshWorkerState();
+}
+
+// ─── WEEKLY TASKS ────────────────────────────────────────────────
+async function renderWeeklyTasks() {
+  const today=todayStr(); const weekStart=getWeekStart();
+  const {data:weekCompletions}=await sb.from('task_completions').select('*, profiles(name)').gte('date',weekStart).eq('task_type','weekly');
+  const weekCountMap={}; const weekDoneByMap={};
+  (weekCompletions||[]).forEach(c=>{ if(c.completed_at){ weekCountMap[c.task_id]=(weekCountMap[c.task_id]||0)+1; if(!weekDoneByMap[c.task_id]) weekDoneByMap[c.task_id]=[]; weekDoneByMap[c.task_id].push({name:(c.profiles?.name||'').split(' ')[0],time:c.completed_at}); } });
+  const {data:myToday}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).eq('date',today).eq('task_type','weekly');
+  const myTodayIds=new Set((myToday||[]).map(c=>c.task_id));
+  const myDoneMap={}; (myToday||[]).forEach(c=>{if(c.completed_at) myDoneMap[c.task_id]=c.completed_at;});
+  let html=`<div class="card-title">${t('weekly_tasks')}</div>`;
+  WEEKLY_TASKS.forEach(task=>{
+    const doneCount=weekCountMap[task.id]||0; const allDone=doneCount>=task.freq;
+    const onToday=myTodayIds.has(task.id); const isDone=!!myDoneMap[task.id];
+    if(allDone&&!onToday) return;
+    const doneBy=weekDoneByMap[task.id]||[];
+    const doneByLabel=doneBy.map(d=>d.name+' '+fmtTime(d.time)).join(', ');
+    let rightBtn='';
+    if(!onToday&&!allDone){ rightBtn='<button class="btn-add-today" onclick="addWeeklyToday(\''+task.id+'\')">'+t('add_today')+'</button>'; }
+    else if(onToday){ const ck3=isDone?'':'completeTask(\''+task.id+'\',\'weekly\')'; rightBtn='<div class="task-check '+(isDone?'weekly-done':'')+'\" onclick="'+ck3+'">'+(isDone?'✓':'')+'</div>'; }
+    const freqLabel=task.freq>1?(doneCount+'/'+task.freq+'×/sem'):(allDone?'✓':(onToday?t('today'):t('this_week')));
+    const byHtml=doneBy.length&&!isDone?(' · <span style="color:var(--green);font-size:10px;">'+doneByLabel+'</span>'):'';
+    html+='<div class="task-item">'+(onToday?'':'<div style="width:22px;flex-shrink:0;"></div>')+'<div class="task-body"><div class="task-name '+(isDone?'done':'')+'">'+task.name+'</div><div class="task-meta">'+(task.dur>=60?Math.floor(task.dur/60)+'h'+(task.dur%60?pad(task.dur%60)+'m':''):task.dur+'min')+' · '+freqLabel+byHtml+'</div></div>'+rightBtn+'</div>';
+  });
+  document.getElementById('weekly-card').innerHTML=html;
+}
+
+async function addWeeklyToday(taskId) { await addTaskToday(taskId,'weekly'); await renderWeeklyTasks(); }
+
+async function renderBiweeklyTasks() {
+  const today=todayStr();
+  const now=new Date(); const dom=now.getDate();
+  const periodStart=new Date(now.getFullYear(),now.getMonth(),(dom<=15?1:16));
+  const periodStartStr=periodStart.toISOString().slice(0,10);
+  const {data:completions}=await sb.from('task_completions').select('*, profiles(name)').gte('date',periodStartStr).eq('task_type','biweekly');
+  const doneByMap={};
+  (completions||[]).forEach(c=>{ if(c.completed_at){ if(!doneByMap[c.task_id]) doneByMap[c.task_id]=[]; doneByMap[c.task_id].push({name:(c.profiles?.name||'').split(' ')[0],time:c.completed_at}); } });
+  const {data:myToday}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).eq('date',today).eq('task_type','biweekly');
+  const myTodayIds=new Set((myToday||[]).map(c=>c.task_id));
+  const myDoneMap={}; (myToday||[]).forEach(c=>{if(c.completed_at) myDoneMap[c.task_id]=c.completed_at;});
+  let html=`<div class="card-title">${t('biweekly_tasks')}</div>`;
+  BIWEEKLY_TASKS.forEach(task=>{
+    const doneBy=doneByMap[task.id]||[]; const allDone=doneBy.length>0;
+    const onToday=myTodayIds.has(task.id); const isDone=!!myDoneMap[task.id];
+    if(allDone&&!onToday) return;
+    const doneByLabel=doneBy.map(d=>'<span style="color:var(--green);">'+d.name+'</span> '+fmtTime(d.time)).join(' · ');
+    let rightBtn='';
+    if(!onToday&&!allDone){ rightBtn='<button class="btn-add-today" onclick="addTaskToday(\''+task.id+'\',\'biweekly\')">'+t('add_today')+'</button>'; }
+    else if(onToday){ const ck=isDone?'':'completeTask(\''+task.id+'\',\'biweekly\')'; rightBtn='<div class="task-check '+(isDone?'weekly-done':'')+'\" onclick="'+ck+'">'+(isDone?'✓':'')+'</div>'; }
+    html+='<div class="task-item">'+(onToday?'':'<div style="width:22px;flex-shrink:0;"></div>')+'<div class="task-body"><div class="task-name '+(isDone?'done':'')+'">'+task.name+'<span class="badge badge-blue" style="margin-left:6px;font-size:9px;">'+t('biweekly_badge')+'</span></div><div class="task-meta">'+task.dur+'min'+(doneByLabel?' · '+doneByLabel:'')+'</div></div>'+rightBtn+'</div>';
+  });
+  document.getElementById('biweekly-card').innerHTML=html;
+}
+
+async function renderMonthlyTasks() {
+  const today=todayStr(); const now=new Date();
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);
+  const isArturo=getWorkerKey()==='arturo';
+  const tasks=isArturo?MONTHLY_TASKS_ARTURO:[];
+  const el=document.getElementById('monthly-card');
+  if(tasks.length===0){ el.innerHTML=''; return; }
+  const {data:completions}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).gte('date',monthStart).eq('task_type','monthly');
+  const doneMap={}; (completions||[]).forEach(c=>{if(c.completed_at) doneMap[c.task_id]=c.completed_at;});
+  const {data:myToday}=await sb.from('task_completions').select('*').eq('user_id',currentUser.id).eq('date',today).eq('task_type','monthly');
+  const myTodayIds=new Set((myToday||[]).map(c=>c.task_id));
+  let html=`<div class="card-title">${t('monthly_tasks')}</div>`;
+  tasks.forEach(task=>{
+    const isDone=!!doneMap[task.id]; const onToday=myTodayIds.has(task.id);
+    if(isDone&&!onToday) return;
+    let rightBtn='';
+    if(!onToday&&!isDone){ rightBtn='<button class="btn-add-today" onclick="addTaskToday(\''+task.id+'\',\'monthly\')">'+t('add_today')+'</button>'; }
+    else if(onToday){ const ck=isDone?'':'completeTask(\''+task.id+'\',\'monthly\')'; rightBtn='<div class="task-check '+(isDone?'weekly-done':'')+'\" onclick="'+ck+'">'+(isDone?'✓':'')+'</div>'; }
+    html+='<div class="task-item">'+(onToday?'':'<div style="width:22px;flex-shrink:0;"></div>')+'<div class="task-body"><div class="task-name '+(isDone?'done':'')+'">'+task.name+'<span class="badge badge-amber" style="margin-left:6px;font-size:9px;">'+t('monthly_badge')+'</span></div><div class="task-meta">'+task.dur+'min'+(isDone?' · <span style="color:var(--green);font-size:10px;">'+fmtTime(doneMap[task.id])+'</span>':'')+'</div></div>'+rightBtn+'</div>';
+  });
+  el.innerHTML=html;
+}
+
+async function addTaskToday(taskId, taskType) {
+  const today=todayStr();
+  await sb.from('task_completions').upsert({user_id:currentUser.id,task_id:taskId,date:today,task_type:taskType,completed_at:null},{onConflict:'user_id,task_id,date'});
+  showToast(t('weekly_added'));
+  if(taskType==='biweekly') await renderBiweeklyTasks();
+  else await renderMonthlyTasks();
+}
+
+// ─── GPS PUNCH ───────────────────────────────────────────────────
+async function punchInGps(type) { const banner=document.getElementById('gps-banner'); banner.style.display='block'; banner.textContent=t('gps_checking'); const result=await checkGps(); if(!result.ok){ const dist=result.dist!=null?` (${result.dist}m)`:''; banner.textContent=t('gps_blocked')+dist; return; } banner.style.display='none'; await punchIn(type); }
+async function punchIn(type) { const {error}=await sb.from('time_entries').insert({user_id:currentUser.id,clock_in:new Date().toISOString(),entry_type:type}); if(!error){ showToast(type==='merienda'?t('break_started'):t('punched_in')); await refreshWorkerState(); } }
+async function punchOut() { if(!activeEntry) return; const {error}=await sb.from('time_entries').update({clock_out:new Date().toISOString()}).eq('id',activeEntry.id); if(!error){ showToast(activeEntry.entry_type==='merienda'?t('break_ended'):t('punched_out')); activeEntry=null; await refreshWorkerState(); } }
+
+// ─── COMPENSATION (quincenal) ────────────────────────────────────
+async function renderCompensation(overtimeMins) {
+  const now=new Date();
+  const qStart=getQuincenaStart(now).toISOString().slice(0,10);
+  const qEnd=getQuincenaEnd(now).toISOString().slice(0,10);
+
+  const pts=await getTotalPoints(currentUser.id, qStart, qEnd);
+  const totalPoints=pts.total;
+
+  const {data:approved}=await sb.from('compensation_requests').select('*').eq('user_id',currentUser.id).eq('status','approved').gte('created_at',qStart+'T00:00:00');
+  let deductedPoints=0; (approved||[]).forEach(r=>deductedPoints+=r.points_requested||0);
+  const bankPoints=Math.max(0,totalPoints-deductedPoints);
+
+  const compEl=document.getElementById('comp-card');
+  const rate=HOURLY_RATES[currentProfile?.name]||90;
+  const ratePerMin=rate/60;
+  const dopValue=bankPoints>0?Math.round(bankPoints*ratePerMin):0;
+  const canRequest=isRequestWindowOpen();
+
+  let html=`<div class="card-title">${t('compensation')}</div>`;
+  if(bankPoints>0){
+    html+=`<div class="points-display"><div class="points-amount">${bankPoints} pts</div><div class="points-label">${t('hour_bank')} · ${ratePerMin.toFixed(2)} DOP/pt</div></div>`;
+    html+=`<div class="dop-display"><div class="dop-amount">RD$ ${dopValue.toLocaleString()}</div><div class="dop-label">${t('overtime_dop')}</div></div>`;
+    html+=`<div style="font-size:12px;color:var(--text3);margin-bottom:10px;">⚡ Tareas rápidas: ${pts.taskPoints} pts · ⏱ Horas extra: ${pts.overtimeMins} pts</div>`;
+  } else {
+    html+=`<div class="empty">${t('no_bank')}</div>`; compEl.innerHTML=html; return;
+  }
+  if(canRequest){ html+=`<select id="comp-type"><option value="money">${t('comp_money')}</option><option value="time_off">${t('comp_time')}</option></select><button class="btn-send" onclick="sendCompRequest(${bankPoints})">${t('send_request')} →</button>`; }
+  else { html+=`<div class="btn-send-locked">${t('comp_locked')}</div>`; }
+  compEl.innerHTML=html;
+}
+
+async function sendCompRequest(bankPoints) {
+  const type=document.getElementById('comp-type').value;
+  const {error}=await sb.from('compensation_requests').insert({user_id:currentUser.id,points_requested:bankPoints,type,status:'pending'});
+  if(!error) showToast(t('request_sent'));
+}
+
+// ─── CHEF VIEW ───────────────────────────────────────────────────
+async function renderChef() {
+  const content=document.getElementById('main-content');
+  content.innerHTML=`<div class="tab-bar"><button class="tab active" onclick="chefTab('team')" id="tab-team">${t('team_tab')}</button><button class="tab" onclick="chefTab('plan')" id="tab-plan">${t('plan_tab')}</button><button class="tab" onclick="chefTab('requests')" id="tab-requests">${t('requests_tab')}</button><button class="tab" onclick="chefTab('week')" id="tab-week">${t('week_tab')}</button><button class="tab" onclick="chefTab('calendar')" id="tab-calendar">${t('calendar_tab')}</button></div><div class="tab-content active" id="chef-team"></div><div class="tab-content" id="chef-plan"></div><div class="tab-content" id="chef-requests"></div><div class="tab-content" id="chef-week"></div><div class="tab-content" id="chef-calendar"></div>`;
+  await loadChefTeam(); await loadChefPlan(); await loadChefRequests(); await loadChefWeek(); renderCalendar();
+}
+
+function chefTab(tab) { ['team','plan','requests','week','calendar'].forEach(name=>{ document.getElementById('tab-'+name)?.classList.toggle('active',name===tab); document.getElementById('chef-'+name)?.classList.toggle('active',name===tab); }); }
+
+// ─── CHEF TEAM ───────────────────────────────────────────────────
+async function loadChefTeam() {
+  const {data:pesticeros}=await sb.from('profiles').select('*').neq('role','chef');
+  const today=new Date(); today.setHours(0,0,0,0);
+  let html='';
+  const avColors={'pesticero':'av-primary','nelson':'av-brown','administradora':'av-purple','voluntario':'av-blue'};
+  for(const p of (pesticeros||[])){
+    const {data:entries}=await sb.from('time_entries').select('*').eq('user_id',p.id).gte('clock_in',today.toISOString());
+    const active=entries?.find(e=>!e.clock_out); let workedMins=0;
+    entries?.forEach(e=>{ if(e.clock_out&&e.entry_type==='work') workedMins+=Math.floor((new Date(e.clock_out)-new Date(e.clock_in))/60000); });
+    if(active?.entry_type==='work') workedMins+=Math.floor((new Date()-new Date(active.clock_in))/60000);
+    const initials=p.name.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const avClass=p.name.includes('Nelson')?'av-brown':(p.role==='administradora'?'av-purple':(p.role==='voluntario'?'av-blue':'av-primary'));
+    const overtime=workedMins-(9*60+30);
+    const badge=active?`<span class="badge badge-green">${t('on_shift')}</span>`:`<span class="badge" style="background:var(--surface2);color:var(--text3);">${t('off')}</span>`;
+    html+='<div class="team-row" onclick="openHistoryModal(\''+p.id+'\',\''+p.name.split(' ').slice(0,2).join(' ')+'\')">'+'<div class="status-dot '+(active?'dot-green':'dot-gray')+'"></div>'+'<div class="avatar '+avClass+'">'+initials+'</div>'+'<div class="team-info"><div class="team-name">'+p.name.split(' ').slice(0,2).join(' ')+'</div><div class="team-sub">'+(active?(active.entry_type==='merienda'?'🍽 Merienda':fmtTime(active.clock_in)+' →'):'— · Ver historial →')+'</div></div>'+'<div class="team-right"><div class="team-hours">'+fmtDuration(workedMins)+'</div>'+(overtime>0?'<span class="badge badge-primary">+'+fmtDuration(overtime)+'</span>':badge)+'</div></div>';
+  }
+  document.getElementById('chef-team').innerHTML=`<div class="card"><div class="card-title">${t('team_status')}</div>${html||'<div class="empty">—</div>'}</div><div style="text-align:center;font-size:12px;color:var(--text3);margin-top:-4px;">${t('touch_worker')}</div>`;
+}
+
+// ─── HISTORY MODAL ───────────────────────────────────────────────
+async function openHistoryModal(userId, name) {
+  document.getElementById('history-modal-title').textContent=name+' · '+t('last_30_days');
+  document.getElementById('history-modal-content').innerHTML='<div class="empty">'+t('loading')+'</div>';
+  document.getElementById('history-modal').style.display='flex';
+  const since=new Date(); since.setDate(since.getDate()-30); since.setHours(0,0,0,0);
+  const {data:entries}=await sb.from('time_entries').select('*').eq('user_id',userId).gte('clock_in',since.toISOString()).order('clock_in',{ascending:false});
+  if(!entries||entries.length===0){ document.getElementById('history-modal-content').innerHTML='<div class="empty">'+t('no_records')+'</div>'; return; }
+  const byDay={};
+  entries.forEach(e=>{ const day=e.clock_in.slice(0,10); if(!byDay[day]) byDay[day]=[]; byDay[day].push(e); });
+  let html='';
+  Object.keys(byDay).sort().reverse().forEach(day=>{
+    const dayEntries=byDay[day]; let dayWorked=0;
+    dayEntries.forEach(e=>{ if(e.clock_out&&e.entry_type==='work') dayWorked+=Math.floor((new Date(e.clock_out)-new Date(e.clock_in))/60000); });
+    html+=`<div class="history-day"><div class="history-day-label">${fmtDateShort(day)}</div>`;
+    dayEntries.forEach(e=>{
+      const typeIn=e.entry_type==='merienda'?'☕ Merienda inicio':'▶ Entrada';
+      const typeOut=e.entry_type==='merienda'?'☕ Merienda fin':'⏹ Salida';
+      html+=`<div class="history-entry"><span class="history-type">${typeIn}</span><span class="history-time">${fmtTime(e.clock_in)}</span></div>`;
+      if(e.clock_out) html+=`<div class="history-entry"><span class="history-type">${typeOut}</span><span class="history-time">${fmtTime(e.clock_out)}</span></div>`;
+    });
+    html+=`<div class="history-total">${fmtDuration(dayWorked)} ${t('worked')}</div></div>`;
+  });
+  document.getElementById('history-modal-content').innerHTML=html;
+}
+function closeHistoryModal() { document.getElementById('history-modal').style.display='none'; }
+
+// ─── CHEF PLAN ───────────────────────────────────────────────────
+async function loadChefPlan() {
+  const today=todayStr(); const weekStart=getWeekStart();
+  const {data:workers}=await sb.from('profiles').select('*').neq('role','chef');
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span class="card-title" style="margin-bottom:0;">${t('daily_plan')}</span><button onclick="openExtraModal(null,null)" style="background:var(--primary);color:white;border:none;border-radius:20px;padding:5px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;">+ Tarea extra</button></div>`;
+
+  for(const p of (workers||[])){
+    const pKey=p.name.includes('Nelson')?'nelson':(p.role==='administradora'?'administradora':(p.role==='voluntario'?'voluntario':'arturo'));
+    const tasks=DAILY_TASKS[pKey]||[];
+    const {data:completions}=await sb.from('task_completions').select('*').eq('user_id',p.id).eq('date',today).eq('task_type','daily');
+    const doneMap={}; (completions||[]).forEach(c=>{doneMap[c.task_id]=c.completed_at;});
+    const {data:ptData}=await sb.from('task_points').select('*').eq('user_id',p.id).eq('date',today);
+    const ptsMap={}; (ptData||[]).forEach(pt=>{ptsMap[pt.task_id]=pt.points;});
+    const extras=await loadExtraTasks(p.id,today);
+    const {data:extraComp}=await sb.from('task_completions').select('*').eq('user_id',p.id).eq('date',today).eq('task_type','extra');
+    const extraDoneMap={}; (extraComp||[]).forEach(c=>{extraDoneMap[c.task_id]=c.completed_at;});
+    const now=new Date();
+    const firstName=p.name.split(' ').slice(0,2).join(' ');
+    const doneCount=Object.values(doneMap).filter(v=>v).length+Object.values(extraDoneMap).filter(v=>v).length;
+    const totalCount=tasks.length+extras.length;
+    html+=`<div class="card"><div class="card-title">${firstName} · ${doneCount}/${totalCount} ${t('completed_at')}</div>`;
+    tasks.forEach(task=>{
+      const isDone=!!doneMap[task.id];
+      const [sh,sm]=task.time.split(':').map(Number);
+      const sollEnd=new Date(); sollEnd.setHours(sh,sm,0,0); sollEnd.setMinutes(sollEnd.getMinutes()+task.dur);
+      const isLate=!isDone&&now>sollEnd;
+      const pts=ptsMap[task.id];
+      let istHtml='';
+      if(isDone){
+        const doneDate=new Date(doneMap[task.id]);
+        const lateMins=Math.round((doneDate-sollEnd)/60000);
+        if(pts>0){ istHtml=`<div class="chef-task-ist" style="color:var(--purple);">⚡${pts}pts ${fmtTime(doneMap[task.id])}</div>`; }
+        else if(lateMins>2){ istHtml=`<div class="chef-task-ist" style="color:var(--red);">${fmtTime(doneMap[task.id])} +${lateMins}m</div>`; }
+        else { istHtml=`<div class="chef-task-ist" style="color:var(--green);">${fmtTime(doneMap[task.id])} ✓</div>`; }
+      } else if(isLate){ istHtml=`<span class="badge badge-red">⚠ ${t('pending_badge')}</span>`; }
+      else { istHtml=`<span style="font-size:11px;color:var(--text3);">—</span>`; }
+      html+=`<div class="chef-task-item"><div class="chef-task-left"><div class="chef-task-name" style="${isDone?'color:var(--text3);text-decoration:line-through;':isLate?'color:var(--red);':''}">${task.name}</div><div class="chef-task-soll">${task.time} · ${task.dur}min</div></div><div class="chef-task-right">${istHtml}</div></div>`;
+    });
+    extras.forEach(task=>{
+      const isDone=!!extraDoneMap[task.id];
+      const recLabel=task.recurrence==='once'?t('rec_once'):task.recurrence==='daily'?t('rec_daily'):task.recurrence==='weekly'?t('rec_weekly'):t('rec_monfri');
+      const istHtml=isDone?`<div class="chef-task-ist" style="color:var(--green);">${fmtTime(extraDoneMap[task.id])} ✓</div>`:`<span style="font-size:11px;color:var(--text3);">—</span>`;
+      html+=`<div class="chef-task-item"><div class="chef-task-left"><div class="chef-task-name" style="${isDone?'color:var(--text3);text-decoration:line-through;':''}">${task.name} <span class="extra-badge">${recLabel}</span></div><div class="chef-task-soll">${task.duration_mins?task.duration_mins+'min':'—'}${task.note?' · '+task.note:''}</div></div><div class="chef-task-right">${istHtml}</div></div>`;
+    });
+    html+='</div>';
+  }
+
+  // Weekly pool
+  const {data:weeklyComp}=await sb.from('task_completions').select('*, profiles(name)').gte('date',weekStart).eq('task_type','weekly');
+  const weeklyCountMap={}; const weeklyDoneByMap={};
+  (weeklyComp||[]).forEach(c=>{ if(c.completed_at){ weeklyCountMap[c.task_id]=(weeklyCountMap[c.task_id]||0)+1; if(!weeklyDoneByMap[c.task_id]) weeklyDoneByMap[c.task_id]=[]; weeklyDoneByMap[c.task_id].push({name:(c.profiles?.name||'').split(' ')[0],time:c.completed_at}); } });
+  html+=`<div class="card"><div class="card-title" style="margin-bottom:8px;">${t('weekly_tasks_label')}</div>`;
+  WEEKLY_TASKS.forEach(task=>{
+    const count=weeklyCountMap[task.id]||0; const done=count>=task.freq;
+    const doneBy=weeklyDoneByMap[task.id]||[];
+    const doneByLabel=doneBy.map(d=>'<span style="color:var(--green);">'+d.name+'</span> '+fmtTime(d.time)).join(' · ');
+    html+=`<div class="weekly-chef-item"><div><div style="font-size:13px;font-weight:500;${done?'color:var(--text3);text-decoration:line-through;':''}">${task.name}</div><div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${task.dur>=60?Math.floor(task.dur/60)+'h'+(task.dur%60?pad(task.dur%60)+'m':''):task.dur+'min'}${doneByLabel?' · '+doneByLabel:''}</div></div><div style="text-align:right;">${done?`<span class="badge badge-green">✓ ${count}/${task.freq}</span>`:`<span class="badge badge-brown">${count}/${task.freq}</span>`}</div></div>`;
+  });
+  html+='</div>';
+
+  document.getElementById('chef-plan').innerHTML=html||'<div class="card"><div class="empty">—</div></div>';
+}
+
+// ─── CHEF REQUESTS ───────────────────────────────────────────────
+async function loadChefRequests() {
+  const {data:requests}=await sb.from('compensation_requests').select('*, profiles(name)').eq('status','pending').order('created_at',{ascending:false});
+  let html=`<div class="card-title">${t('pending_requests')}</div>`;
+  if(!isRequestWindowOpen()){ html+=`<div style="font-size:13px;color:var(--text2);text-align:center;padding:1rem 0;">${t('period_info')}</div>`; }
+  if(!requests||requests.length===0){ html+=`<div class="empty">${t('no_pending')}</div>`; document.getElementById('chef-requests').innerHTML=`<div class="card">${html}</div>`; return; }
+  requests.forEach(r=>{
+    const rate=HOURLY_RATES[r.profiles?.name]||90;
+    const ratePerMin=rate/60;
+    const pts=r.points_requested||r.hours_requested*60||0;
+    const dop=Math.round(pts*ratePerMin);
+    const typeLabel=r.type==='money'?t('type_money')+' · RD$ '+dop.toLocaleString()+' ('+pts+' pts)':t('type_time');
+    html+=`<div class="request-card" id="req-${r.id}"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><strong style="font-size:14px;">${r.profiles?.name}</strong><span class="badge badge-primary">${t('pending_badge')}</span></div><div style="font-size:13px;color:var(--text2);">${typeLabel}</div><div class="req-actions"><button class="btn-approve" onclick="handleRequest('${r.id}','approved')">${t('approve')}</button><button class="btn-deny" onclick="handleRequest('${r.id}','denied')">${t('deny')}</button></div></div>`;
+  });
+  document.getElementById('chef-requests').innerHTML=html;
+}
+
+async function handleRequest(id,status) {
+  await sb.from('compensation_requests').update({status}).eq('id',id);
+  const card=document.getElementById('req-'+id);
+  if(card){ card.className='request-card '+(status==='approved'?'approved':'denied'); card.querySelector('.req-actions').innerHTML=`<span style="font-size:13px;font-weight:500;color:${status==='approved'?'var(--green)':'var(--text3)'};">${status==='approved'?t('approved'):t('denied')}</span>`; card.querySelector('.badge').textContent=status==='approved'?t('approved'):t('denied'); card.querySelector('.badge').className='badge '+(status==='approved'?'badge-green':''); }
+  showToast(status==='approved'?t('approved'):t('denied'));
+}
+
+// ─── CHEF WEEK (quincenal) ───────────────────────────────────────
+async function loadChefWeek() {
+  const {data:workers}=await sb.from('profiles').select('*').neq('role','chef');
+  const now=new Date();
+  const qStart=getQuincenaStart(now).toISOString().slice(0,10);
+  const qEnd=getQuincenaEnd(now).toISOString().slice(0,10);
+
+  let html=`<div class="card"><div class="card-title">${t('week_summary')} · ${qStart} → ${qEnd}</div>`;
+
+  // Ranking
+  const rankData=[];
+  for(const p of (workers||[])){
+    const pts=await getTotalPoints(p.id,qStart,qEnd);
+    rankData.push({name:p.name.split(' ').slice(0,2).join(' '),points:pts.total,taskPts:pts.taskPoints,otPts:pts.overtimeMins,role:p.role});
+  }
+  rankData.sort((a,b)=>b.points-a.points);
+
+  html+=`<div class="card-title" style="margin-top:8px;">${t('ranking')}</div>`;
+  rankData.forEach((r,i)=>{
+    const posClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const rate=90; const dop=Math.round(r.points*(rate/60));
+    html+=`<div class="ranking-row"><div class="ranking-pos ${posClass}">${i+1}</div><div style="flex:1;"><div style="font-size:14px;font-weight:500;">${r.name}</div><div style="font-size:11px;color:var(--text3);">⚡${r.taskPts} tareas · ⏱${r.otPts} extra</div></div><div style="text-align:right;"><div style="font-size:14px;font-weight:500;font-family:'DM Mono',monospace;color:var(--purple);">${r.points} pts</div><div style="font-size:11px;color:var(--text3);">RD$ ${dop.toLocaleString()}</div></div></div>`;
+  });
+  html+='</div>';
+
+  document.getElementById('chef-week').innerHTML=html;
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────────
+function renderCalendar() {
+  const container=document.getElementById('chef-calendar');
+  const year=calendarDate.getFullYear();
+  const month=calendarDate.getMonth();
+  const months_es=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const days_short=['L','M','X','J','V','S','D'];
+
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  let startDow=firstDay.getDay(); if(startDow===0) startDow=7; startDow--;
+
+  const todayD=new Date(); todayD.setHours(0,0,0,0);
+
+  let calHtml=`<div class="card">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNav(-1)">‹</button>
+      <div class="cal-title">${months_es[month]} ${year}</div>
+      <button class="cal-nav" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      ${days_short.map(d=>`<div class="cal-day-header">${d}</div>`).join('')}`;
+
+  // Empty cells before first day
+  for(let i=0;i<startDow;i++){
+    const prevDate=new Date(year,month,-(startDow-1-i));
+    calHtml+=`<div class="cal-day other-month" onclick="calSelectDay('${prevDate.toISOString().slice(0,10)}')"><div class="cal-day-num">${prevDate.getDate()}</div></div>`;
+  }
+
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(year,month,d);
+    const dateStr=date.toISOString().slice(0,10);
+    const isToday=date.getTime()===todayD.getTime();
+    const isSelected=calSelectedDate===dateStr;
+    const dow=date.getDay();
+
+    // Dots for task types
+    let dots='';
+    // Daily tasks always exist on weekdays
+    if(dow>=1&&dow<=6) dots+=`<div class="cal-dot cal-dot-daily"></div>`;
+    // Weekly tasks on weekdays
+    if(dow>=1&&dow<=5) dots+=`<div class="cal-dot cal-dot-weekly"></div>`;
+    // Monthly tasks on 1st
+    if(d===1) dots+=`<div class="cal-dot cal-dot-monthly"></div>`;
+
+    calHtml+=`<div class="cal-day${isToday?' today':''}${isSelected?' selected':''}" onclick="calSelectDay('${dateStr}')">
+      <div class="cal-day-num">${d}</div>
+      <div class="cal-dot-row">${dots}</div>
+    </div>`;
+  }
+
+  // Fill remaining cells
+  const totalCells=startDow+lastDay.getDate();
+  const remaining=(7-totalCells%7)%7;
+  for(let i=1;i<=remaining;i++){
+    const nextDate=new Date(year,month+1,i);
+    calHtml+=`<div class="cal-day other-month" onclick="calSelectDay('${nextDate.toISOString().slice(0,10)}')"><div class="cal-day-num">${nextDate.getDate()}</div></div>`;
+  }
+
+  calHtml+=`</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);"><div class="cal-dot cal-dot-daily"></div>Diarias</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);"><div class="cal-dot cal-dot-weekly"></div>Semanales</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);"><div class="cal-dot cal-dot-monthly"></div>Mensuales</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);"><div class="cal-dot cal-dot-extra"></div>Extra</span>
+    </div>
+  </div>`;
+
+  // Day detail panel
+  if(calSelectedDate){
+    calHtml+=`<div id="cal-detail-panel"></div>`;
+  }
+
+  container.innerHTML=calHtml;
+  if(calSelectedDate) loadCalDayDetail(calSelectedDate);
+}
+
+function calNav(dir) { calendarDate.setMonth(calendarDate.getMonth()+dir); renderCalendar(); }
+
+async function calSelectDay(dateStr) {
+  calSelectedDate=dateStr; renderCalendar();
+}
+
+async function loadCalDayDetail(dateStr) {
+  const panel=document.getElementById('cal-detail-panel');
+  if(!panel) return;
+  panel.innerHTML=`<div class="cal-day-detail"><div class="cal-detail-date">${fmtDateShort(dateStr)}</div><div class="empty">${t('loading')}</div></div>`;
+
+  const date=new Date(dateStr+'T12:00:00');
+  const dow=date.getDay();
+  const isWeekday=dow>=1&&dow<=6;
+  const isMonFri=dow>=1&&dow<=5;
+
+  // Load extra tasks for this date for all workers
+  const {data:extras}=await sb.from('extra_tasks').select('*, profiles!extra_tasks_assigned_to_fkey(name)').or(`date.eq.${dateStr},recurrence.eq.daily,recurrence.eq.weekly,recurrence.eq.mon-fri`);
+  const filteredExtras=(extras||[]).filter(task=>{
+    if(task.recurrence==='once') return task.date===dateStr;
+    if(task.recurrence==='daily') return true;
+    if(task.recurrence==='weekly') return task.date===dateStr||new Date(task.date).getDay()===dow;
+    if(task.recurrence==='mon-fri') return isMonFri;
+    return false;
+  });
+
+  let html=`<div class="cal-day-detail"><div class="cal-detail-date">${fmtDateShort(dateStr)}</div>`;
+
+  // Fixed daily tasks (shown as info, not editable)
+  if(isWeekday){
+    html+=`<div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Tareas fijas del día</div>`;
+    // Show by worker
+    const {data:workers}=await sb.from('profiles').select('*').neq('role','chef');
+    for(const w of (workers||[])){
+      const wKey=w.name.includes('Nelson')?'nelson':(w.role==='administradora'?'administradora':(w.role==='voluntario'?'voluntario':'arturo'));
+      const tasks=DAILY_TASKS[wKey]||[];
+      if(tasks.length===0) continue;
+      const firstName=w.name.split(' ').slice(0,1)[0];
+      tasks.forEach(task=>{
+        html+=`<div class="cal-task-row"><div class="cal-task-info"><div class="cal-task-name">${task.name}</div><div class="cal-task-meta">${firstName} · ${task.time} · ${task.dur}min</div></div></div>`;
+      });
+    }
+  }
+
+  // Weekly tasks (selectable/assignable)
+  if(isWeekday){
+    html+=`<div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin:10px 0 6px;">Tareas semanales disponibles</div>`;
+    WEEKLY_TASKS.forEach(task=>{
+      html+=`<div class="cal-task-row"><div class="cal-task-info"><div class="cal-task-name">${task.name}</div><div class="cal-task-meta">${task.dur}min · semanal</div></div><div class="cal-task-actions"><button class="btn-cal-edit" onclick="openExtraModal(null,'${dateStr}','${encodeURIComponent(task.name)}',${task.dur})">+ Asignar</button></div></div>`;
+    });
+  }
+
+  // Monthly tasks
+  if(date.getDate()<=7){
+    html+=`<div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin:10px 0 6px;">Tareas mensuales</div>`;
+    MONTHLY_TASKS_ARTURO.forEach(task=>{
+      html+=`<div class="cal-task-row"><div class="cal-task-info"><div class="cal-task-name">${task.name}</div><div class="cal-task-meta">${task.dur}min · mensual</div></div><div class="cal-task-actions"><button class="btn-cal-edit" onclick="openExtraModal(null,'${dateStr}','${encodeURIComponent(task.name)}',${task.dur})">+ Asignar</button></div></div>`;
+    });
+  }
+
+  // Extra tasks (editable/deletable)
+  if(filteredExtras.length>0){
+    html+=`<div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin:10px 0 6px;">Tareas extra asignadas</div>`;
+    filteredExtras.forEach(task=>{
+      const workerName=(task.profiles?.name||'').split(' ')[0];
+      html+=`<div class="cal-task-row"><div class="cal-task-info"><div class="cal-task-name">${task.name}</div><div class="cal-task-meta">${workerName} · ${task.duration_mins||'—'}min${task.note?' · '+task.note:''}</div></div><div class="cal-task-actions"><button class="btn-cal-edit" onclick="openExtraModal('${task.id}','${dateStr}')">${t('edit')}</button><button class="btn-cal-del" onclick="deleteExtraTask('${task.id}')">${t('delete')}</button></div></div>`;
+    });
+  }
+
+  html+=`<button class="btn-cal-add" onclick="openExtraModal(null,'${dateStr}')">${t('cal_add_task')}</button>`;
+  html+='</div>';
+  panel.innerHTML=html;
+}
+
+async function deleteExtraTask(id) {
+  await sb.from('extra_tasks').delete().eq('id',id);
+  showToast(t('task_deleted'));
+  if(calSelectedDate) await loadCalDayDetail(calSelectedDate);
+}
+
+// ─── EXTRA TASK MODAL ────────────────────────────────────────────
+async function openExtraModal(editId, prefillDate, prefillName, prefillDur) {
+  // Populate worker toggles dynamically
+  const {data:workers}=await sb.from('profiles').select('*').neq('role','chef');
+  const personsDiv=document.getElementById('et-persons');
+  personsDiv.innerHTML=(workers||[]).map(w=>`<button class="person-toggle" data-uid="${w.id}" onclick="togglePerson(this)">${w.name.split(' ')[0]}</button>`).join('');
+
+  document.getElementById('et-date').value=prefillDate||todayStr();
+  document.getElementById('et-name').value=prefillName?decodeURIComponent(prefillName):'';
+  document.getElementById('et-name-ht').value='';
+  document.getElementById('et-dur').value=prefillDur||'';
+  document.getElementById('et-note').value='';
+  document.getElementById('et-time').value='';
+  document.getElementById('et-edit-id').value=editId||'';
+  document.querySelectorAll('.rec-opt').forEach(b=>b.classList.remove('selected'));
+  document.querySelector('.rec-opt[data-val="once"]').classList.add('selected');
+
+  const title=editId?'Editar tarea':'Nueva tarea';
+  document.getElementById('extra-modal-title').textContent=title;
+  document.getElementById('et-save-btn').textContent=editId?'Guardar cambios →':'Guardar tarea →';
+
+  if(editId){
+    const {data:task}=await sb.from('extra_tasks').select('*').eq('id',editId).single();
+    if(task){
+      document.getElementById('et-name').value=task.name;
+      document.getElementById('et-name-ht').value=task.name_ht||'';
+      document.getElementById('et-date').value=task.date;
+      document.getElementById('et-dur').value=task.duration_mins||'';
+      document.getElementById('et-note').value=task.note||'';
+      document.getElementById('et-time').value=task.scheduled_time||'';
+      // Select assigned person
+      personsDiv.querySelectorAll('.person-toggle').forEach(btn=>{
+        if(btn.dataset.uid===task.assigned_to) btn.classList.add('selected');
+      });
+      const recBtn=document.querySelector('.rec-opt[data-val="'+task.recurrence+'"]');
+      if(recBtn){ document.querySelectorAll('.rec-opt').forEach(b=>b.classList.remove('selected')); recBtn.classList.add('selected'); }
+    }
+  }
+
+  document.getElementById('extra-modal').style.display='flex';
+}
+
+function closeExtraModal() { document.getElementById('extra-modal').style.display='none'; }
+function togglePerson(btn) { btn.classList.toggle('selected'); }
+function selectRec(btn) { document.querySelectorAll('.rec-opt').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); }
+
+async function saveExtraTask() {
+  const name=document.getElementById('et-name').value.trim();
+  const name_ht=document.getElementById('et-name-ht').value.trim();
+  const date=document.getElementById('et-date').value;
+  const dur=parseInt(document.getElementById('et-dur').value)||0;
+  const note=document.getElementById('et-note').value.trim();
+  const scheduledTime=document.getElementById('et-time').value||null;
+  const recurrence=document.querySelector('.rec-opt.selected')?.dataset.val||'once';
+  const persons=[...document.querySelectorAll('.person-toggle.selected')].map(b=>b.dataset.uid);
+  const editId=document.getElementById('et-edit-id').value;
+
+  if(!name){showToast(t('err_name'));return;}
+  if(!date){showToast(t('err_date'));return;}
+
+  if(editId){
+    // Update existing
+    const {error}=await sb.from('extra_tasks').update({name,name_ht:name_ht||null,date,duration_mins:dur,note,recurrence,scheduled_time:scheduledTime}).eq('id',editId);
+    if(error){showToast(t('err_save'));console.error(error);return;}
+    showToast('✓ Tarea actualizada');
+  } else {
+    if(persons.length===0){showToast(t('err_person'));return;}
+    const inserts=persons.map(uid=>({name,name_ht:name_ht||null,date,duration_mins:dur,note,recurrence,assigned_to:uid,created_by:currentUser.id,scheduled_time:scheduledTime}));
+    const {error}=await sb.from('extra_tasks').insert(inserts);
+    if(error){showToast(t('err_save'));console.error(error);return;}
+    showToast('✓ Tarea guardada');
+  }
+
+  closeExtraModal();
+  await loadChefPlan();
+  if(calSelectedDate) await loadCalDayDetail(calSelectedDate);
+}
+
+async function loadExtraTasks(userId,date) {
+  const dow=new Date(date+'T12:00:00').getDay();
+  const {data}=await sb.from('extra_tasks').select('*').eq('assigned_to',userId).or(`date.eq.${date},recurrence.eq.daily,recurrence.eq.weekly,recurrence.eq.mon-fri`);
+  return (data||[]).filter(task=>{
+    if(task.recurrence==='once') return task.date===date;
+    if(task.recurrence==='daily') return true;
+    if(task.recurrence==='weekly') return task.date===date||new Date(task.date).getDay()===dow;
+    if(task.recurrence==='mon-fri') return dow>=1&&dow<=5;
+    return false;
+  });
+}
+
+// ─── LANG ────────────────────────────────────────────────────────
+async function setLang(lang) {
+  currentLang=lang;
+  document.getElementById('lang-es').classList.toggle('active',lang==='es');
+  document.getElementById('lang-ht').classList.toggle('active',lang==='ht');
+  await sb.from('profiles').update({language:lang}).eq('id',currentUser.id);
+  let roleKey='role_'+currentProfile.role;
+  if(currentProfile.role==='chef'){ if(currentProfile.name?.includes('Emilia')) roleKey='role_presidente'; else if(currentProfile.name?.includes('Jose')||currentProfile.name?.includes('Ramon')) roleKey='role_vicepresidente'; }
+  document.getElementById('top-role').textContent=t(roleKey);
+  const workerRoles=['pesticero','administradora','voluntario'];
+  if(workerRoles.includes(currentProfile.role)) await refreshWorkerState();
+}
+
+// ─── AUTO LOGIN ──────────────────────────────────────────────────
+sb.auth.getSession().then(({data:{session}})=>{ if(session?.user) initApp(session.user); });
+</script>
+</body>
+</html>
